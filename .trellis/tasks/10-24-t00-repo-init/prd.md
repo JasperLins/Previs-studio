@@ -19,9 +19,16 @@
 
 ## Acceptance Criteria（T00 验收清单）
 
-- [ ] 原版 dev 服务器可启动，核心流程无报错
-- [ ] ZCode 打开项目时 Trellis 上下文可注入（或可手动 start）
-- [ ] `.trellis/spec/` 五份文件就位，`git status` 结构符合 fork-discipline 的仓库形态（upstream 远程、upstream-mirror/class 分支、class-v0-base 标签、工作树干净）
+- [x] 原版 dev 服务器可启动，核心流程无报错
+- [x] ZCode 打开项目时 Trellis 上下文可注入（或可手动 start）
+- [x] `.trellis/spec/` 五份文件就位，`git status` 结构符合 fork-discipline 的仓库形态（upstream 远程、upstream-mirror/class 分支、class-v0-base 标签、工作树干净）
+
+## 验收自检记录（2026-10-24）
+
+1. **dev/核心流程**：`npm install` 幂等通过；`npm run build` 通过（chunk>500kB 警告为上游原有，非错误）；dev server 启动返回 200，`main.jsx/App.jsx/Viewport.jsx/rig.js/ShotsPanel.jsx` 模块编译均 200。浏览器自动化（IAB）走核心流程：页面完整启动 → 资源库加「方块」→ 对象入场景并持久化（自动保存 objects=person+3×box）→ 点「镜头关键帧」→ localStorage 自动保存出现 1 个机位关键帧；全程 console.error/window error/unhandledrejection 收集器为空。**未覆盖**：导出 MP4（交互式导出待人工各走一遍）。
+2. **Trellis 注入**：本会话 SessionStart/UserPromptSubmit hook 正常注入 Trellis 上下文与 workflow-state；`task.py create/start/list/add-context` 全部可用（会话标识经 `TRELLIS_CONTEXT_ID` 手动提供）。
+3. **spec/仓库形态**：`.trellis/spec/` 五份就位；`upstream` 远程（fetch 连通验证）；`upstream-mirror` 与 `class` 基于基线 f34cb80；annotated 标签 `class-v0-base` 打于 f34cb80；工作树 clean。**偏差**：`origin`（我们的私有仓库）未设置——地址待用户提供后 `git remote add origin <url>`。
+4. **落位**：`docs/00-overview.md`、`docs/PATCHES.md`（基线已填 `f34cb80642aa…28d7`）；T01–T07 录入为 planning 状态任务（prd.md 为原件忠实拷贝，git 识别为 rename）；原始 T*.md 已删除（首个导入 commit 6911f2d 留档）。
 
 ## Notes
 
