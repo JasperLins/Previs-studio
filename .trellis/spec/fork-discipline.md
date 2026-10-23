@@ -4,7 +4,7 @@
 
 ## 仓库形态
 
-- 本地工作仓库保留两个远程：`origin` = 我们的仓库（建议私有；待建，见 docs/PATCHES.md 基线节），`upstream` = 原作者仓库（只拉不推）。
+- 本地工作仓库保留两个远程：`origin` = 我们的仓库（git@github.com:JasperLins/Previs-studio.git），`upstream` = 原作者仓库（只拉不推）。
 - 分支：`upstream-mirror` 只跟随上游 main，不直接提交；`class` 为我们的生产分支（上游 + 接缝 + `src/diagram/`）。
 - 我们的每次发布在 `class` 上打标：`class-v1、class-v2…`，并在 PATCHES.md 记录其对应的上游提交哈希；基线标为 `class-v0-base`（T00 已打于 f34cb80）。
 - 文档落位（T00 定）：项目总览与 ADR 在 `docs/00-overview.md`；接缝台账在 `docs/PATCHES.md`；开发规格在 `.trellis/spec/`；任务规格经 Trellis 任务承载（`.trellis/tasks/`）。

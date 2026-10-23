@@ -7,7 +7,7 @@
 - 上游仓库：https://github.com/GuiYi-Xi/monoform-previs-studio（remote 名 `upstream`，只拉不推）
 - 上游基线提交：`f34cb80642aa7dd749951f347aa70ed205ac28d7`（2026-10-24 克隆即审计基线；本地 `main`、`upstream-mirror`、`class` 起点均为此提交）
 - 我们的版本标：`class-v0-base`（打于 f34cb80，T00）；`class-v1` 待 T07 发布
-- origin（我们的私有仓库）：待建/待填地址，建好后 `git remote add origin <url>`
+- origin（我们的私有仓库）：`git@github.com:JasperLins/Previs-studio.git`（T00 已配置；首次推送：`git push -u origin class` + `git push --tags`）
 
 ## 接缝登记
 
