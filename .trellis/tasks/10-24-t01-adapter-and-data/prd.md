@@ -17,3 +17,12 @@
 - [ ] 老工程打开不报错且 diagram 被补齐默认值；保存后重开字段不丢失
 - [ ] 带 diagram 的工程用原版打开不报错
 - [ ] 单测通过
+
+## 验收自检记录（2026-10-24）
+
+- [x] diagram 内模块除 stateAdapter 外无上游字段名：红线 grep（objectKeyframes/characterKeyframes/bodyType/poseTime/joints，排除 test 与 stateAdapter.js）为空；check 子代理对 App.jsx diff 逐行核对仅含 design §1 六触点。
+- [x] 老工程打开不报错且 diagram 补齐默认值、保存重开不丢失：浏览器实测（独立 dev server）——T00 时代旧代码存的工程（无 diagram）加载后自动保存出现 5 个契约键；加对象 3→4、撤销 4→3；刷新重载后 diagram 5 键存活；全程 console 错误收集器为空。
+- [x] 带 diagram 的工程用原版打开不报错：结构保证（原版 normalizeProjectData 的 `...data` 展开原样携带 diagram 且无消费者），留观项。
+- [x] 单测通过：`node --test "src/diagram/**/*.test.js"` 30/30；`npm run build` 通过。
+
+实现载体：commit cd0196f（工作）+ 232b4b8（任务档案与 spec 注记）。
