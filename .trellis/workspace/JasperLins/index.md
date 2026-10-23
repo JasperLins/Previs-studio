@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 1
+- **Total Sessions**: 2
 - **Last Active**: 2026-10-24
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~31 | Active |
+| `journal-1.md` | ~54 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 2 | 2026-10-24 | T01 适配层与 diagram 数据 | `cd0196f`, `232b4b8`, `40bc601` | `class` |
 | 1 | 2026-10-24 | T00 仓库初始化与 Trellis/ZCode 接入 | `6911f2d`, `6f41a73`, `776694f`, `65e1328` | `class` |
 <!-- @@@/auto:session-history -->
 

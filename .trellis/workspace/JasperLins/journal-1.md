@@ -29,3 +29,26 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 2: T01 适配层与 diagram 数据
+
+**Date**: 2026-10-24
+**Task**: T01 适配层与 diagram 数据
+**Branch**: `class`
+
+### Summary
+
+建立 src/diagram 唯一耦合点：stateAdapter（对象/机位/镜头视图 + setObjectPlane 地面写回）与 diagramData（product-spec §3 契约 normalize）；接缝 S5 六触点使 diagram 进入既有撤销栈与自动保存；30 单测（node --test glob 形式，零新依赖）全绿，build 通过，浏览器实测老工程补齐/撤销/刷新存活零报错；PATCHES.md 登记 S5。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cd0196f` | (see git log) |
+| `232b4b8` | (see git log) |
+| `40bc601` | (see git log) |
+
+### Status
+
+[OK] **Completed**
