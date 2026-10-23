@@ -3,7 +3,7 @@
   "name": "t02-top-view",
   "title": "T02 顶视正交编辑视图与地面约束编辑",
   "description": "一键顶视图 + 地面约束拖拽（P0，依赖 T01）",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,
