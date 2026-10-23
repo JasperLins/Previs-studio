@@ -9,6 +9,7 @@ import {
 import { MainViewport, CameraPreview } from './Viewport.jsx'
 import { ShotsPanel } from './ShotsPanel.jsx'
 import { JOINT_DEFINITIONS, JOINT_GROUPS, RIG_PRESET_GROUPS, RIG_PRESET_OPTIONS, cloneJointPose, interpolateJointPose, normalizePoseId, poseCanLoop, poseForObject, presetJoints, presetPhase, presetRoot } from './rig.js'
+import { normalizeDiagram } from './diagram/diagramData.js'
 
 const CAMERA_ID = '__shot_camera__'
 const PROJECT_STORAGE_KEY = 'monoform-project'
@@ -408,6 +409,7 @@ function normalizeProjectData(data) {
     reference: activeShot.reference,
     keyframes: activeShot.keyframes,
     objectKeyframes: activeShot.objectKeyframes,
+    diagram: normalizeDiagram(data?.diagram),
   }
 }
 
@@ -426,7 +428,7 @@ function readCachedProject() {
   }
 }
 
-function projectData({ settings, objects, camera, lighting, reference, keyframes, objectKeyframes, shots, activeShotId }) {
+function projectData({ settings, objects, camera, lighting, reference, keyframes, objectKeyframes, shots, activeShotId, diagram }) {
   const normalizedSettings = normalizeProjectSettings(settings)
   const sourceShots = shots?.length ? shots : [{ id: 'shot-01', name: '镜头 01' }]
   const resolvedActiveShotId = sourceShots.some(shot => shot.id === activeShotId) ? activeShotId : sourceShots[0].id
@@ -455,6 +457,7 @@ function projectData({ settings, objects, camera, lighting, reference, keyframes
     reference,
     keyframes,
     objectKeyframes,
+    diagram: normalizeDiagram(diagram),
   }
 }
 
@@ -1246,6 +1249,7 @@ export default function App() {
   const [reference, setReference] = useState(() => normalizeReference(startupProject?.reference))
   const [keyframes, setKeyframes] = useState(() => startupProject?.keyframes || initialKeyframes)
   const [characterKeyframes, setCharacterKeyframes] = useState(() => startupProject?.objectKeyframes || startupProject?.characterKeyframes || initialCharacterKeyframes)
+  const [diagram, setDiagram] = useState(() => normalizeDiagram(startupProject?.diagram))
   const [objectDrafts, setObjectDrafts] = useState({})
   const [currentFrame, setCurrentFrame] = useState(0)
   const [selectedKeyframe, setSelectedKeyframe] = useState(null)
@@ -1327,7 +1331,8 @@ export default function App() {
     objectKeyframes: characterKeyframes,
     shots,
     activeShotId,
-  }), [settings, objects, camera, lighting, reference, keyframes, characterKeyframes, shots, activeShotId])
+    diagram,
+  }), [settings, objects, camera, lighting, reference, keyframes, characterKeyframes, shots, activeShotId, diagram])
 
   useEffect(() => {
     currentFrameRef.current = currentFrame
@@ -1403,6 +1408,7 @@ export default function App() {
     setReference(normalized.reference)
     setKeyframes(normalized.keyframes)
     setCharacterKeyframes(normalized.objectKeyframes)
+    setDiagram(normalized.diagram)
     setObjectDrafts({})
     setSelectedKeyframe(null)
     setPlaying(false)
@@ -1924,7 +1930,7 @@ export default function App() {
     else if (activeObject?.id === selectedKeyframeInfo.trackId) deleteObjectKeyframe(selectedKeyframeInfo.frame)
   }
   const saveProject = ({ download = false } = {}) => {
-    const data = projectData({ settings, objects, camera, lighting, reference, keyframes, objectKeyframes: characterKeyframes, shots, activeShotId })
+    const data = projectData({ settings, objects, camera, lighting, reference, keyframes, objectKeyframes: characterKeyframes, shots, activeShotId, diagram })
     const serialized = JSON.stringify(data)
     let cached = true
     try { localStorage.setItem(PROJECT_STORAGE_KEY, serialized) } catch { cached = false }
