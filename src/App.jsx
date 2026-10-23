@@ -2,14 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowDownToLine, Axis3D, Box, BoxSelect, Camera, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleDot, Copy, Download,
   FileImage, FileVideo2, Focus, FolderOpen, Grid3X3, Import, Link2, Lock, MousePointer2, Move3D, Pause, Play, Plus,
-  Magnet, Maximize2, Minimize2, Minus, Redo2, RotateCcw, RotateCw, Save, Settings2, SkipBack, SkipForward, SlidersHorizontal, Sparkles, Sun,
+  Magnet, Map as MapIcon, Maximize2, Minimize2, Minus, Redo2, RotateCcw, RotateCw, Save, Settings2, SkipBack, SkipForward, SlidersHorizontal, Sparkles, Sun,
   ScanLine, Trash2, Undo2, Unlink2, UserRound, Video, ZoomIn,
   Unlock,
 } from 'lucide-react'
 import { MainViewport, CameraPreview } from './Viewport.jsx'
 import { ShotsPanel } from './ShotsPanel.jsx'
 import { JOINT_DEFINITIONS, JOINT_GROUPS, RIG_PRESET_GROUPS, RIG_PRESET_OPTIONS, cloneJointPose, interpolateJointPose, normalizePoseId, poseCanLoop, poseForObject, presetJoints, presetPhase, presetRoot } from './rig.js'
-import { normalizeDiagram } from './diagram/diagramData.js'
+import { normalizeDiagram, patchDiagram } from './diagram/diagramData.js'
+import { computeTopViewBounds, isTopView, worldPerPixel } from './diagram/topView.js'
+import { TopViewOverlay } from './diagram/TopViewOverlay.jsx'
 
 const CAMERA_ID = '__shot_camera__'
 const PROJECT_STORAGE_KEY = 'monoform-project'
@@ -1263,6 +1265,10 @@ export default function App() {
   const [exportProgress, setExportProgress] = useState(0)
   const [showGrid, setShowGrid] = useState(true)
   const [cameraView, setCameraView] = useState(false)
+  const [topView, setTopView] = useState(false)
+  const [topViewFit, setTopViewFit] = useState(null)
+  const [topViewZoom, setTopViewZoom] = useState(0)
+  const [topViewHalfGrid, setTopViewHalfGrid] = useState(true)
   const [lightingPanelOpen, setLightingPanelOpen] = useState(false)
   const [cameraAnglePanelOpen, setCameraAnglePanelOpen] = useState(false)
   const [viewOptionsCollapsed, setViewOptionsCollapsed] = useState(false)
@@ -1280,6 +1286,7 @@ export default function App() {
   const imageCaptureCanvasRef = useRef(null)
   const monitorCanvasRef = useRef(null)
   const editorViewRef = useRef(editorView)
+  const topViewSavedRef = useRef(null)
   const exportLockRef = useRef(false)
   const historyRef = useRef({ past: [], future: [], last: '', timer: null, restoring: false })
   const latestProjectRef = useRef(null)
@@ -1321,6 +1328,9 @@ export default function App() {
   const previewAspect = aspectValue(displayCamera.aspectRatio)
   const previewAspectClass = previewAspect >= 16 / 9 ? 'is-wide' : 'is-tall'
   const exportDimensions = useMemo(() => exportDimensionsForAspect(camera.aspectRatio), [camera.aspectRatio])
+  const topViewActive = isTopView({ topView, cameraView })
+  const topViewCenter = topViewFit?.center || [0, 0]
+  const topViewRadius = topViewFit?.radius || 6
   const currentProject = useMemo(() => projectData({
     settings,
     objects,
@@ -1760,13 +1770,40 @@ export default function App() {
     if (view?.position?.length === 3 && view?.rotation?.length === 3 && view?.target?.length === 3) editorViewRef.current = view
   }, [])
   const openCameraView = () => {
+    // 三视图模式互斥：进摄像机视角即退出顶视（editorView 未被顶视污染，无需恢复）。
+    setTopView(false)
     setEditorView(cloneProjectValue(editorViewRef.current))
     setCameraView(true)
   }
   const openEditorView = () => {
+    // 顶视下点「编辑视角」= 退出顶视并恢复进入前编辑视角（与 toggleTopView 退出路径一致）。
+    if (topView) {
+      const saved = topViewSavedRef.current
+      if (saved) setEditorView(cloneProjectValue(saved))
+      setTopView(false)
+    }
     setCameraView(false)
     setCameraAnglePanelOpen(false)
   }
+  const handleTopViewReport = useCallback(report => {
+    const zoom = Number(report?.zoom)
+    setTopViewZoom(Number.isFinite(zoom) && zoom > 0 ? zoom : 0)
+  }, [])
+  // 顶视进出只动视图态（editorView/topView 系），不触碰 objects/camera/shots（视图态纯度审查门）
+  const toggleTopView = useCallback(() => {
+    if (topView) {
+      const saved = topViewSavedRef.current
+      if (saved) setEditorView(cloneProjectValue(saved))
+      setTopView(false)
+      return
+    }
+    setCameraView(false)
+    setCameraAnglePanelOpen(false)
+    topViewSavedRef.current = cloneProjectValue(editorViewRef.current)
+    setTopViewFit(computeTopViewBounds(objects))
+    setTopViewZoom(0)
+    setTopView(true)
+  }, [objects, topView])
   const levelCameraHorizon = () => {
     setCamera(current => {
       const rotation = Array.isArray(current.rotation) ? [...current.rotation] : [0, 0, 0]
@@ -2169,6 +2206,7 @@ export default function App() {
                 <button className={lightingPanelOpen ? 'is-active' : ''} onClick={() => { setLightingPanelOpen(value => !value); setCameraAnglePanelOpen(false) }} title="调整当前镜头的环境光和主光"><Sun size={14} /> 光照</button>
                 <button className={!cameraView ? 'is-active' : ''} onClick={openEditorView} title="使用固定的编辑观察相机自由布置场景"><RotateCw size={14} /> 编辑视角</button>
                 <button className={cameraView ? 'is-active' : ''} onClick={openCameraView} title="切换到场景中主摄像机的实际画面"><Camera size={14} /> 摄像机视角</button>
+                <button className={topView ? 'is-active' : ''} onClick={toggleTopView} title="正交顶视图 · 平面摆位（网格与比例尺为米制）"><MapIcon size={14} /> 顶视</button>
                 {cameraView && <button className={cameraAnglePanelOpen ? 'is-active' : ''} onClick={() => { setCameraAnglePanelOpen(value => !value); setLightingPanelOpen(false) }} title="调整参考图视角中的地面和水平线"><SlidersHorizontal size={14} /> 镜头角度</button>}
                 <button><span className="solid-sphere" /> 实体</button>
                 <button className="view-options-collapse" onClick={collapseViewOptions} title="收起视角工具" aria-label="收起视角工具"><ChevronRight size={14} /></button>
@@ -2180,11 +2218,21 @@ export default function App() {
           <div className="viewport-label"><strong>{cameraView ? '摄像机视角' : '编辑视角'}</strong><span>{cameraView ? `${aspectLabel(displayCamera.aspectRatio)} · 正在查看场景中的主摄像机` : '固定观察相机 · 可查看并调整场景中的主摄像机'}</span></div>
           <ViewportAspectPicker value={camera.aspectRatio} onChange={aspectRatio => setCamera(current => ({ ...current, aspectRatio }))} />
           <ReferenceOverlay reference={reference} onChange={setReference} onToast={setToast} cameraMode={cameraView} cameraAspect={previewAspect}>
-            <div className="viewport-canvas-layer">
-              <MainViewport key={cameraView ? 'shot-view' : 'scene-view'} cameraView={cameraView} cameraAspect={previewAspect} editorCameraData={editorView} onEditorCameraChange={captureEditorView} objects={animatedObjects} animationTime={currentFrame / fps} selectedId={selectedId} activeJoint={selectedJoint} onSelect={setSelectedId} onJointSelect={(objectId, jointId) => { setSelectedId(objectId); setSelectedJoint(jointId) }} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} onUpdateObject={updateObjectById} cameraData={displayCamera} onUpdateCamera={patch => setCamera(current => ({ ...current, ...patch }))} lighting={lighting} showGrid={showGrid} focusRequest={viewFocusRequest} referenceVisible={Boolean(reference.image && reference.visible)} />
+            <div className={`viewport-canvas-layer ${topViewActive ? 'dg-topview' : ''}`}>
+              <MainViewport key={cameraView ? 'shot-view' : topView ? 'top-view' : 'scene-view'} cameraView={cameraView} cameraAspect={previewAspect} editorCameraData={editorView} onEditorCameraChange={captureEditorView} objects={animatedObjects} animationTime={currentFrame / fps} selectedId={selectedId} activeJoint={selectedJoint} onSelect={setSelectedId} onJointSelect={(objectId, jointId) => { setSelectedId(objectId); setSelectedJoint(jointId) }} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} planeLock={topViewActive} onUpdateObject={updateObjectById} cameraData={displayCamera} onUpdateCamera={patch => setCamera(current => ({ ...current, ...patch }))} lighting={lighting} showGrid={showGrid} focusRequest={viewFocusRequest} referenceVisible={Boolean(reference.image && reference.visible)} topView={topView} topViewCenter={topViewCenter} topViewRadius={topViewRadius} topViewGrid={diagram.layers.grid} topViewHalfGrid={topViewHalfGrid} onTopViewportReport={handleTopViewReport} />
+              {topViewActive && (
+                <TopViewOverlay
+                  worldPerPx={worldPerPixel(topViewZoom)}
+                  onExit={toggleTopView}
+                  gridOn={diagram.layers.grid}
+                  onToggleGrid={() => setDiagram(prev => patchDiagram(prev, { layers: { grid: !(prev?.layers?.grid ?? true) } }))}
+                  halfGridOn={topViewHalfGrid}
+                  onToggleHalfGrid={() => setTopViewHalfGrid(value => !value)}
+                />
+              )}
             </div>
           </ReferenceOverlay>
-          <div className="navigation-hint"><span><MousePointer2 size={12} /> 点击物体选择</span>{cameraView ? <><span>主摄像机画面</span><span>网格仅辅助 · 不进入导出</span></> : <><span>空白处左键旋转</span><span>右键平移</span><span>滚轮缩放</span></>}</div>
+          <div className="navigation-hint"><span><MousePointer2 size={12} /> 点击物体选择</span>{topViewActive ? <><span>顶视 · 拖拽平移 X/Z</span><span>滚轮缩放（比例尺左下）</span><span>拖对象 = 地面移动</span></> : cameraView ? <><span>主摄像机画面</span><span>网格仅辅助 · 不进入导出</span></> : <><span>空白处左键旋转</span><span>右键平移</span><span>滚轮缩放</span></>}</div>
           <div className={`camera-monitor is-${monitorMode}`}>
             <div className="monitor-head"><div><Video size={13} /><strong>主摄像机 01</strong><span>{monitorMode === 'minimized' ? 'CAMERA' : 'CAMERA VIEW'}</span></div><div className="monitor-head-actions">
               {monitorMode === 'minimized' ? <button title="恢复摄像机窗口" onClick={() => setMonitorMode('normal')}><Maximize2 size={13} /></button> : <>

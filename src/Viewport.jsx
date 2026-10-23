@@ -4,6 +4,9 @@ import { ContactShadows, Grid, OrbitControls, TransformControls, useGLTF } from 
 import * as THREE from 'three'
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { poseForObject, presetDefinition } from './rig.js'
+import { applyPlaneLock } from './diagram/topView.js'
+import { TopViewControls } from './diagram/TopViewControls.jsx'
+import { TopViewGrid } from './diagram/TopViewGrid.jsx'
 
 const CAMERA_ID = '__shot_camera__'
 const BUILT_IN_MODEL_URL = `${import.meta.env.BASE_URL}models/xbot-animated.glb`
@@ -927,7 +930,7 @@ function shouldKeepCurrentSelection(event, selectedId, selected, transformMode) 
   return event.intersections?.some(intersection => sceneObjectIdFromIntersection(intersection) === selectedId)
 }
 
-function SceneObject({ data, selected, selectedId, activeJoint, transformMode, transformSpace = 'world', snapEnabled = true, groundRequest, onSelect, onUpdate, onJointSelect, animationTime = 0, preview = false }) {
+function SceneObject({ data, selected, selectedId, activeJoint, transformMode, transformSpace = 'world', snapEnabled = true, groundRequest, planeLock = false, onSelect, onUpdate, onJointSelect, animationTime = 0, preview = false }) {
   const groupRef = useRef(null)
   const objectRotateDrag = useRef(null)
   const scaleTransformStart = useRef(null)
@@ -963,12 +966,14 @@ function SceneObject({ data, selected, selectedId, activeJoint, transformMode, t
       } else nextScale = nextScale.map((value, axis) => locks[axis] ? baseline[axis] : Math.max(0.05, value))
       object.scale.fromArray(nextScale)
     }
-    onUpdate(data.id, {
+    const next = {
       position: object.position.toArray(),
       rotation: [object.rotation.x, object.rotation.y, object.rotation.z],
       scale: nextScale,
-    })
-  }, [data.id, data.proportionalScale, data.scaleAxisLocks, onUpdate, transformMode])
+    }
+    // planeLock（顶视）才夹紧 Y/俯仰/翻滚；3D 视图必须原样提交，否则高度与俯仰拖动会被打回（回归红线）。
+    onUpdate(data.id, planeLock ? applyPlaneLock(data, next) : next)
+  }, [data, planeLock, onUpdate, transformMode])
   const beginObjectInteraction = useCallback(event => {
     if (shouldKeepCurrentSelection(event, selectedId, selected, transformMode)) return
     event.stopPropagation()
@@ -1073,9 +1078,9 @@ function SceneObject({ data, selected, selectedId, activeJoint, transformMode, t
           mode={transformMode}
           space={transformSpace}
           size={0.8}
-          showX={transformMode !== 'scale' || !scaleAxisLocks[0]}
-          showY={transformMode !== 'scale' || !scaleAxisLocks[1]}
-          showZ={transformMode !== 'scale' || !scaleAxisLocks[2]}
+          showX={planeLock && transformMode === 'rotate' ? false : (transformMode !== 'scale' || !scaleAxisLocks[0])}
+          showY={planeLock && transformMode === 'translate' ? false : (transformMode !== 'scale' || !scaleAxisLocks[1])}
+          showZ={planeLock && transformMode === 'rotate' ? false : (transformMode !== 'scale' || !scaleAxisLocks[2])}
           translationSnap={snapEnabled ? 0.1 : null}
           rotationSnap={snapEnabled ? Math.PI / 36 : null}
           scaleSnap={snapEnabled ? 0.1 : null}
@@ -1088,15 +1093,17 @@ function SceneObject({ data, selected, selectedId, activeJoint, transformMode, t
   )
 }
 
-function CameraModel({ data, selected, selectedId, transformMode, transformSpace = 'world', snapEnabled = true, onSelect, onUpdate }) {
+function CameraModel({ data, selected, selectedId, transformMode, transformSpace = 'world', snapEnabled = true, planeLock = false, onSelect, onUpdate }) {
   const groupRef = useRef(null)
   const syncTransform = useCallback(() => {
     if (!groupRef.current) return
-    onUpdate({
+    const next = {
       position: groupRef.current.position.toArray(),
       rotation: [groupRef.current.rotation.x, groupRef.current.rotation.y, groupRef.current.rotation.z],
-    })
-  }, [onUpdate])
+    }
+    // 同 SceneObject：夹紧仅在顶视（planeLock）生效，3D 视图原样提交。
+    onUpdate(planeLock ? applyPlaneLock(data, next) : next)
+  }, [data, onUpdate, planeLock])
   useLayoutEffect(() => {
     if (!groupRef.current) return
     groupRef.current.position.fromArray(data.position)
@@ -1144,6 +1151,9 @@ function CameraModel({ data, selected, selectedId, transformMode, transformSpace
           mode={transformMode}
           space={transformSpace}
           size={0.8}
+          showX={!planeLock || transformMode === 'translate'}
+          showY={planeLock ? transformMode === 'rotate' : true}
+          showZ={!planeLock || transformMode === 'translate'}
           translationSnap={snapEnabled ? 0.1 : null}
           rotationSnap={snapEnabled ? Math.PI / 36 : null}
           onObjectChange={syncTransform}
@@ -1242,20 +1252,21 @@ function EditorCameraReporter({ enabled, onChange }) {
   return null
 }
 
-function EditorScene({ objects, selectedId, activeJoint, onSelect, onJointSelect, transformMode, transformSpace, snapEnabled, groundRequest, onUpdateObject, cameraData, cameraAspect, onUpdateCamera, editorCameraData, onEditorCameraChange, lighting, showGrid, focusRequest, referenceVisible = false, cameraView = false, animationTime = 0 }) {
+function EditorScene({ objects, selectedId, activeJoint, onSelect, onJointSelect, transformMode, transformSpace, snapEnabled, groundRequest, planeLock = false, onUpdateObject, cameraData, cameraAspect, onUpdateCamera, editorCameraData, onEditorCameraChange, lighting, showGrid, focusRequest, referenceVisible = false, cameraView = false, topView = false, topViewCenter = [0, 0], topViewRadius = 6, topViewGrid = true, topViewHalfGrid = true, onTopViewportReport, animationTime = 0 }) {
   return (
     <>
-      {!referenceVisible && <color attach="background" args={['#555653']} />}
-      <fog attach="fog" args={['#555653', 18, 42]} />
+      {!referenceVisible && !topView && <color attach="background" args={['#555653']} />}
+      {!topView && <fog attach="fog" args={['#555653', 18, 42]} />}
       <RendererExposure value={lighting?.exposure} />
       <StudioLights lighting={lighting} />
-      <Ground showGrid={showGrid} showSurface={!referenceVisible} />
-      {objects.map(object => <SceneObject key={object.id} data={object} selected={selectedId === object.id} selectedId={selectedId} activeJoint={activeJoint} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} onSelect={onSelect} onJointSelect={onJointSelect} onUpdate={onUpdateObject} animationTime={animationTime} />)}
-      {!cameraView && <CameraModel data={cameraData} selected={selectedId === CAMERA_ID} selectedId={selectedId} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} onSelect={onSelect} onUpdate={onUpdateCamera} />}
+      <Ground showGrid={showGrid && !topView} showSurface={!referenceVisible && !topView} />
+      {topView && <TopViewGrid radius={topViewRadius} showGrid={topViewGrid} showHalfGrid={topViewHalfGrid} />}
+      {objects.map(object => <SceneObject key={object.id} data={object} selected={selectedId === object.id} selectedId={selectedId} activeJoint={activeJoint} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} planeLock={planeLock} onSelect={onSelect} onJointSelect={onJointSelect} onUpdate={onUpdateObject} animationTime={animationTime} />)}
+      {!cameraView && <CameraModel data={cameraData} selected={selectedId === CAMERA_ID} selectedId={selectedId} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} planeLock={planeLock} onSelect={onSelect} onUpdate={onUpdateCamera} />}
       <ContactShadows position={[0, 0.01, 0]} opacity={0.42} scale={18} blur={2.4} far={9} />
-      {cameraView ? <PreviewCameraController cameraData={cameraData} cameraAspect={cameraAspect} /> : <OrbitControls makeDefault target={editorCameraData?.target || [0, 1, 0]} minDistance={2} maxDistance={35} maxPolarAngle={Math.PI * 0.49} />}
-      <EditorCameraReporter enabled={!cameraView} onChange={onEditorCameraChange} />
-      {!cameraView && <ViewFocusController request={focusRequest} />}
+      {cameraView ? <PreviewCameraController cameraData={cameraData} cameraAspect={cameraAspect} /> : topView ? <TopViewControls center={topViewCenter} radius={topViewRadius} onViewportReport={onTopViewportReport} /> : <OrbitControls makeDefault target={editorCameraData?.target || [0, 1, 0]} minDistance={2} maxDistance={35} maxPolarAngle={Math.PI * 0.49} />}
+      <EditorCameraReporter enabled={!cameraView && !topView} onChange={onEditorCameraChange} />
+      {!cameraView && !topView && <ViewFocusController request={focusRequest} />}
     </>
   )
 }
@@ -1305,18 +1316,22 @@ function PreviewScene({ objects, cameraData, cameraAspect, lighting, backgroundC
 
 export function MainViewport(props) {
   const editorCamera = props.editorCameraData || {}
+  const topView = props.cameraView ? false : Boolean(props.topView)
+  const topViewCenter = props.topViewCenter || [0, 0]
   const cameraSettings = props.cameraView
     ? { position: props.cameraData.position, rotation: props.cameraData.rotation, fov: 42, near: 0.05, far: 200 }
-    : {
-        position: editorCamera.position || [8.5, 6.4, 9.5],
-        ...(editorCamera.rotation ? { rotation: editorCamera.rotation } : {}),
-        fov: 42,
-        near: 0.05,
-        far: 200,
-      }
+    : topView
+      ? { position: [topViewCenter[0], 100, topViewCenter[1]], near: 0.1, far: 400 }
+      : {
+          position: editorCamera.position || [8.5, 6.4, 9.5],
+          ...(editorCamera.rotation ? { rotation: editorCamera.rotation } : {}),
+          fov: 42,
+          near: 0.05,
+          far: 200,
+        }
   return (
-    <Canvas shadows="basic" dpr={[1, 1.75]} camera={cameraSettings} onPointerMissed={() => props.onSelect(null)} gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.88 }}>
-      <EditorScene {...props} />
+    <Canvas shadows="basic" dpr={[1, 1.75]} orthographic={topView} camera={cameraSettings} onPointerMissed={() => props.onSelect(null)} gl={{ alpha: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 0.88 }}>
+      <EditorScene {...props} topView={topView} />
     </Canvas>
   )
 }

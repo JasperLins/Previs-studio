@@ -475,3 +475,21 @@ button:disabled { opacity: .28; cursor: not-allowed !important; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ===== diagram 顶视图（T02）：以下全部为本项目追加，类名一律 dg- 前缀，不改上方任何规则 ===== */
+.viewport-canvas-layer.dg-topview { background: #e7e4db; }
+.dg-topview-overlay { position: absolute; inset: 0; z-index: 4; pointer-events: none; font-size: 10px; color: #3f3b33; }
+.dg-topview-overlay button { pointer-events: auto; height: 24px; padding: 0 9px; border: 1px solid rgba(63,59,51,.28); border-radius: 5px; background: rgba(244,241,234,.9); color: #3f3b33; font-size: 9px; cursor: pointer; }
+.dg-topview-overlay button:hover { background: #fffdf6; }
+.dg-topview-overlay button.is-active { background: #3d4d63; border-color: #3d4d63; color: #f4f1ea; }
+.dg-topview-overlay button:disabled { opacity: .45; cursor: default; }
+.dg-topview-compass { position: absolute; top: 58px; left: 12px; display: flex; flex-direction: column; align-items: center; gap: 2px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.12)); }
+.dg-compass-north { fill: #3d4d63; font-size: 9px; font-weight: 700; }
+.dg-compass-note { font-size: 8px; color: rgba(63,59,51,.78); background: rgba(244,241,234,.82); padding: 1px 5px; border-radius: 3px; }
+.dg-topview-scale { position: absolute; left: 12px; bottom: 66px; display: flex; align-items: center; gap: 6px; }
+.dg-scale-line { display: block; height: 5px; border: 1px solid #3f3b33; border-top: none; background: rgba(63,59,51,.22); }
+.dg-scale-read { font-size: 9px; font-weight: 600; color: #3f3b33; background: rgba(244,241,234,.85); padding: 1px 6px; border-radius: 3px; }
+.dg-scale-pending { font-weight: 400; opacity: .7; }
+.dg-topview-actions { position: absolute; top: 54px; right: 12px; display: flex; gap: 4px; }
+.dg-topview-exit { border-color: #3d4d63 !important; background: #3d4d63 !important; color: #f4f1ea !important; font-weight: 650; }
+.dg-topview-exit:hover { background: #4a5d77 !important; }

@@ -1,7 +1,7 @@
 // node --test "src/diagram/**/*.test.js" 直接可跑（node 22 内置 runner，零依赖；裸目录形式不匹配）
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { DEFAULT_DIAGRAM, normalizeDiagram } from './diagramData.js'
+import { DEFAULT_DIAGRAM, normalizeDiagram, patchDiagram } from './diagramData.js'
 
 test('DEFAULT_DIAGRAM 是规格定义的默认形态', () => {
   assert.deepEqual(DEFAULT_DIAGRAM, {
@@ -161,4 +161,25 @@ test('不与输入共享引用（写入结果不影响 raw）', () => {
   normalized.layers.grid = true
   assert.equal(raw.gazeTargets.a.point[0], 1)
   assert.equal(raw.layers.grid, false)
+})
+
+test('patchDiagram：layers 键级合并（未提键保留），其余顶层键浅合并', () => {
+  const prev = normalizeDiagram({ layers: { grid: false } })
+  const next = patchDiagram(prev, { layers: { ghosts: false } })
+  assert.equal(next.layers.grid, false)
+  assert.equal(next.layers.ghosts, false)
+  assert.equal(next.layers.labels, true)
+  assert.deepEqual(next.axisPair, null)
+  assert.notEqual(next, prev)
+  assert.notEqual(next.layers, prev.layers)
+})
+
+test('patchDiagram：prev 非法时按默认打底，patch 非法时回退 prev 的规范化形态', () => {
+  const fromNothing = patchDiagram(null, { layers: { grid: false } })
+  assert.equal(fromNothing.layers.grid, false)
+  assert.deepEqual(fromNothing.axisPair, DEFAULT_DIAGRAM.axisPair)
+  const noop = patchDiagram(undefined, undefined)
+  assert.deepEqual(noop, DEFAULT_DIAGRAM)
+  const kept = patchDiagram({ layers: { grid: false } }, 'garbage')
+  assert.equal(kept.layers.grid, false)
 })

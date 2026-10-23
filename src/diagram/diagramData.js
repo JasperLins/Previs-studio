@@ -97,3 +97,15 @@ export function normalizeDiagram(raw) {
   result.promptDrafts = normalizePromptDrafts(raw.promptDrafts)
   return result
 }
+
+// diagram 局部补丁：浅合并顶层键 + layers 键级合并，垃圾值由 normalizeDiagram 回退。
+// stateAdapter.patchDiagram（T01）与 App 顶视网格开关（T02）共用的唯一合并入口。
+export function patchDiagram(prev, patch) {
+  const base = prev && typeof prev === 'object' ? prev : {}
+  if (!isPlainObject(patch)) return normalizeDiagram(base)
+  return normalizeDiagram({
+    ...base,
+    ...patch,
+    layers: { ...(isPlainObject(base.layers) ? base.layers : {}), ...(patch.layers || {}) },
+  })
+}

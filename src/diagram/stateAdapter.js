@@ -2,7 +2,7 @@
 // src/diagram/ 内除本文件外，禁止出现上游专有字段名（关键帧轨道、人物体型/相位/骨骼等结构，见审查门 grep）。
 // 依赖注入：适配器不自持状态，全部读写经 deps 走 App.jsx 既有状态更新与历史栈。
 
-import { normalizeDiagram } from './diagramData.js'
+import { patchDiagram as mergeDiagramPatch } from './diagramData.js'
 
 const isFiniteNumber = value => Number.isFinite(value)
 
@@ -52,15 +52,7 @@ export function shotToView(shot) {
   }
 }
 
-// 浅合并 + layers 键级合并，复用 normalizeDiagram 的合并与回退内核。
-function mergeDiagramPatch(prev, patch) {
-  const base = prev && typeof prev === 'object' ? prev : {}
-  return normalizeDiagram({
-    ...base,
-    ...patch,
-    layers: { ...(base.layers || {}), ...(patch.layers || {}) },
-  })
-}
+// layers 键级合并的合并内核统一在 diagramData.patchDiagram（T02 起与 App 网格开关共用）。
 
 // deps:
 //   getSnapshot    () => ({ objects, camera, shots, activeShotId, selectedId, diagram })
