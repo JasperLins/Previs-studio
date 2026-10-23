@@ -1,1 +1,4 @@
 {"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/fork-discipline.md", "reason": "适配层唯一入口/接缝最小化/纯函数资产三条纪律与回归清单"}
+{"file": ".trellis/spec/product-spec.md", "reason": "第3节 diagram 数据契约定版"}
+{"file": ".trellis/spec/base-audit.md", "reason": "App.jsx 状态模型与接缝候选背景"}

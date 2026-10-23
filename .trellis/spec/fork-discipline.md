@@ -32,7 +32,7 @@
 - [ ] 带 diagram 的工程用原版 MONOFORM 打开不报错（忽略扩展字段）
 - [ ] 原有流程：加对象、拖变换、打机位/人物关键帧、切镜、导 PNG、导 MP4 各走一遍
 - [ ] product-spec 第 4 节验收总纲逐项过
-- [ ] `src/diagram/` 单测全绿
+- [ ] `src/diagram/` 单测全绿（`node --test "src/diagram/**/*.test.js"`；Node 22 起 `--test` 位置参数按 glob 处理，裸目录形式不匹配）
 
 ## 退出条件（出现任一，启动自立评估并记录）
 

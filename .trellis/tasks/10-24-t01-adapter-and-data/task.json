@@ -3,7 +3,7 @@
   "name": "t01-adapter-and-data",
   "title": "T01 适配层与 diagram 数据",
   "description": "建立 stateAdapter 唯一耦合点与 diagram 数据扩展（P0，依赖 T00）",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,
