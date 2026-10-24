@@ -1,1 +1,4 @@
 {"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/diagram-symbols.md", "reason": "本任务的实现规格：符号尺寸/配色/姿势变体/门窗墙画法"}
+{"file": ".trellis/spec/product-spec.md", "reason": "§1.4 符号替换范围与 §2 启用判定"}
+{"file": ".trellis/spec/fork-discipline.md", "reason": "接缝纪律、自管 DOM 模式注记（T03 沉淀）"}

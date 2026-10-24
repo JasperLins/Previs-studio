@@ -3,7 +3,7 @@
   "name": "t04-symbol-swap",
   "title": "T04 顶视符号替换（人物/门/窗/墙）",
   "description": "四类对象顶视专业符号（P0，依赖 T02）",
-  "status": "planning",
+  "status": "in_progress",
   "dev_type": null,
   "scope": null,
   "package": null,
