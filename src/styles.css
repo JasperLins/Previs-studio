@@ -37,7 +37,7 @@ button:disabled { opacity: .28; cursor: not-allowed !important; }
 }
 .brand-mark { display: flex; align-items: center; gap: 9px; height: 100%; }
 .brand-glyph { position: relative; width: 30px; height: 30px; overflow: hidden; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); border-radius: 7px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
-.brand-glyph img { position: absolute; left: 50%; top: 50%; width: 160%; height: auto; transform: translate(-50%, -50%); mix-blend-mode: multiply; }
+.brand-glyph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .brand-mark > div { display: flex; flex-direction: column; line-height: 1; gap: 3px; }
 .brand-mark strong { font-family: Bahnschrift, "Segoe UI Variable", sans-serif; font-size: 12px; letter-spacing: .11em; }
 .brand-mark small { font-size: 9px; color: var(--text-faint); letter-spacing: .18em; }
@@ -551,3 +551,33 @@ button:disabled { opacity: .28; cursor: not-allowed !important; }
 .dg-slider-number-input { width: 100%; min-width: 0; box-sizing: border-box; height: 16px; padding: 0 2px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--text-dim); font-family: "Cascadia Mono", monospace; font-size: 8px; line-height: 1; text-align: right; outline: none; }
 .dg-slider-number-input:focus { border-color: var(--axis-color, #8a8578); background: rgba(255,255,255,.06); }
 .dg-slider-number-input:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ===== S8 项目库面板（dg- 前缀，追加区，不改上方任何规则） ===== */
+.dg-projects-panel { display: flex; flex-direction: column; gap: 8px; height: 100%; overflow-y: auto; padding: 10px 12px; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+.dg-projects-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.dg-projects-head strong { font-size: 12px; color: #eceade; }
+.dg-projects-head small { margin-left: 6px; font-size: 9px; letter-spacing: .08em; color: #8f897c; }
+.dg-projects-head button { display: inline-flex; align-items: center; gap: 3px; padding: 3px 9px; border: 1px solid #555653; border-radius: 4px; background: #262723; color: #eceade; font-size: 11px; cursor: pointer; }
+.dg-projects-head button:hover:not(:disabled) { border-color: #22c55e; }
+.dg-projects-head button:disabled { opacity: .45; cursor: default; }
+.dg-projects-list { display: flex; flex-direction: column; gap: 6px; }
+.dg-projects-row { position: relative; display: grid; grid-template-columns: 56px 1fr; grid-template-rows: auto auto; gap: 2px 8px; padding: 7px 8px; border: 1px solid #3c3d39; border-radius: 6px; background: #262723; }
+.dg-projects-row.is-active { border-color: #22c55e; background: #232923; }
+.dg-projects-cover { grid-row: 1 / span 2; display: flex; align-items: center; justify-content: center; width: 56px; height: 38px; border-radius: 4px; background: #1d1e1b; color: #6f6a5e; overflow: hidden; }
+.dg-projects-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dg-projects-copy { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.dg-projects-name { font-size: 11px; font-weight: 600; color: #eceade; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; }
+.dg-projects-row.is-active .dg-projects-name { color: #86efac; }
+.dg-projects-copy small { font-size: 9px; color: #8f897c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dg-projects-rename-input { width: 100%; min-width: 0; box-sizing: border-box; height: 20px; padding: 0 5px; border: 1px solid #6b6455; border-radius: 4px; background: rgba(255,255,255,.08); color: #e8e4d9; font-size: 11px; outline: none; }
+.dg-projects-rename-input:focus { border-color: var(--accent); background: #1d1d1c; }
+.dg-projects-active { position: absolute; top: 6px; right: 8px; padding: 1px 5px; border-radius: 3px; background: #22c55e; color: #0c1a0e; font-size: 8px; font-weight: 700; font-style: normal; letter-spacing: .06em; }
+.dg-projects-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
+.dg-projects-actions button { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border: 1px solid #4a4b47; border-radius: 4px; background: #1f201d; color: #b9b3a6; font-size: 10px; cursor: pointer; }
+.dg-projects-actions button:hover:not(:disabled) { border-color: #6b6455; color: #eceade; }
+.dg-projects-actions button:disabled { opacity: .4; cursor: default; }
+.dg-projects-actions .dg-projects-delete:hover:not(:disabled) { border-color: #b5563d; color: #e58d75; }
+.dg-projects-empty { margin: 6px 0; font-size: 11px; line-height: 1.6; color: #8f897c; }
+.dg-projects-unavailable { margin: 4px 0; padding: 8px 10px; border: 1px solid #a8693d; border-radius: 5px; background: #251d18; color: #e0a572; font-size: 11px; line-height: 1.6; }
+.dg-projects-busy { padding: 4px 8px; border-radius: 4px; background: rgba(34, 197, 94, .12); color: #86efac; font-size: 10px; }
+.dg-projects-note { margin: 2px 0 0; font-size: 9px; line-height: 1.6; color: #6f6a5e; }

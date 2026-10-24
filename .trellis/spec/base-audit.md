@@ -45,6 +45,7 @@ React 19 + Vite 8 + Three.js 0.170 + @react-three/fiber 9 + @react-three/drei 10
 | S5 | App.jsx | 工程 normalize/保存逻辑透传 `diagram` 扩展字段 | 数据兼容 |
 | S6 | App.jsx | `SceneList` 行内双击重命名编辑态；`LeftSidebar` 透传 onRenameObject；App 侧 `renameObject`/`syncObjectNameToShots`（名称按 object.id 扇出到全部镜头 shot.objects 快照，机位词跨镜头同步）；Inspector 名称输入框提交时同样扇出（maxLength 30、空值回退） | 层级重命名 + 名称跨镜头同步 |
 | S7 | App.jsx | `AxisSlider` 与焦距/动作相位 `range-field` 的只读 `<output>` 换为 `SliderNumberInput`（新文件 src/SliderNumberInput.jsx + 纯函数 src/sliderNumber.js 含单测）；非法/超轨道范围输入还原，合法值对齐 step 网格 | 滑块数值手动输入 |
+| S8 | App.jsx | 右侧栏第三页签「项目」+ ProjectsPanel 挂载；boot 迁移 effect；自动保存双写（IndexedDB 权威 + localStorage 缓存/指针）；startNewProject/importProjectFile 及库操作回调；逻辑在新文件 src/projects/（projectStore.js 含单测 + ProjectsPanel.jsx） | 多项目库（IndexedDB），修复单槽数据丢失 |
 
 原则：接缝只做「挂载与传参」，任何业务逻辑写在 `src/diagram/` 内。S6/S7 为通用 UI 功能（非 diagram 业务）：可复用控件与纯函数放独立新文件（零上游冲突），App.jsx 内只留挂载、传参与名称扇出这类无法外移的状态接线。
 

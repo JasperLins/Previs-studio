@@ -20,9 +20,12 @@ import { PromptPanel } from './diagram/promptCompiler/PromptPanel.jsx'
 import { buildShotDiagramSvg } from './diagram/exportDiagram/svg.js'
 import { svgToPngBlob } from './diagram/exportDiagram/raster.js'
 import { SliderNumberInput } from './SliderNumberInput.jsx'
+import { ProjectsPanel } from './projects/ProjectsPanel.jsx'
+import { createProjectId, deleteEntry, getEntry, listEntries, makeEntryFromProject, openStore, putEntry, uniqueProjectName } from './projects/projectStore.js'
 
 const CAMERA_ID = '__shot_camera__'
 const PROJECT_STORAGE_KEY = 'monoform-project'
+const ACTIVE_PROJECT_KEY = 'monoform-active-project-id'
 const LEGACY_PROJECT_STORAGE_KEY = 'stageframe-project'
 const CUSTOM_POSE_STORAGE_KEY = 'monoform-custom-poses'
 const PROJECT_VERSION = 16
@@ -46,6 +49,7 @@ const DEFAULT_LIGHTING = {
 const FPS_OPTIONS = [24, 25, 30]
 const FOCAL_LENGTH_PRESETS = [18, 24, 35, 50, 85, 120]
 const BRAND_MARK_URL = `${import.meta.env.BASE_URL}branding/monoform-mark.png`
+const BRAND_AVATAR_URL = `${import.meta.env.BASE_URL}branding/monoform-avatar.png`
 const ASPECT_RATIOS = [
   { value: '16:9', label: '16 : 9 · 横屏视频', ratio: 16 / 9 },
   { value: '9:16', label: '9 : 16 · 竖屏短视频', ratio: 9 / 16 },
@@ -1433,7 +1437,19 @@ export default function App() {
       durationSeconds: settings.durationSeconds,
     })
   }, [activeShotId, characterKeyframes, diagram, displayCamera, fps, keyframes, promptObjects, settings.durationSeconds, shots])
-  const [promptTabOpen, setPromptTabOpen] = useState(false)
+  const [rightTab, setRightTab] = useState('inspector')
+  // ===== S8 项目库（src/projects/）：活动指针 + 面板状态；refs 供 900ms 防抖闭包读取实时值 =====
+  const [activeProjectId, setActiveProjectId] = useState(() => { try { return localStorage.getItem(ACTIVE_PROJECT_KEY) || null } catch { return null } })
+  const [libraryEntries, setLibraryEntries] = useState([])
+  const [libraryBusy, setLibraryBusy] = useState(false)
+  const [storeUnavailable, setStoreUnavailable] = useState(false)
+  const [, setLibraryVersion] = useState(0)
+  const [pendingRegistrationId, setPendingRegistrationId] = useState(null)
+  const activeProjectIdRef = useRef(activeProjectId)
+  const storeUnavailableRef = useRef(false)
+  const quotaMissRef = useRef(false)
+  const libraryBusyRef = useRef(false)
+  const bootedRef = useRef(false)
 
   // T07 机位图导出：中性数据 → SVG（纯函数）→ PNG 下载
   const handleExportDiagram = () => {
@@ -1535,15 +1551,80 @@ export default function App() {
   useEffect(() => {
     setSaveStatus('保存中…')
     const timer = setTimeout(() => {
+      const id = activeProjectIdRef.current
+      if (storeUnavailableRef.current || !id) {
+        // 库不可用（R1.4 降级）或 boot 未定：现状单槽 localStorage 行为
+        try {
+          localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(currentProject))
+          setSaveStatus('已自动保存')
+        } catch { setSaveStatus('自动保存空间不足') }
+        return
+      }
       try {
         localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(currentProject))
-        setSaveStatus('已自动保存')
       } catch {
-        setSaveStatus('自动保存空间不足')
+        if (!quotaMissRef.current) {
+          quotaMissRef.current = true
+          setToast('工程已存入项目库（浏览器缓存空间不足，不影响数据）')
+        }
       }
+      putEntry(makeEntryFromProject(id, currentProject, Date.now()))
+        .then(() => setSaveStatus('已自动保存'))
+        .catch(() => setSaveStatus('自动保存失败'))
     }, 900)
     return () => clearTimeout(timer)
   }, [currentProject])
+
+  // ===== S8 项目库 boot（一次）：指针恢复 / 首次迁移 / 孤儿注册（design §4.1）=====
+  useEffect(() => {
+    if (bootedRef.current) return
+    bootedRef.current = true
+    const ensureBoot = async () => {
+      let entries = []
+      try {
+        await openStore()
+        entries = await listEntries()
+      } catch {
+        storeUnavailableRef.current = true
+        setStoreUnavailable(true)
+        return
+      }
+      let pointer = null
+      try { pointer = localStorage.getItem(ACTIVE_PROJECT_KEY) } catch { pointer = null }
+      if (pointer && entries.some(entry => entry.id === pointer)) {
+        adoptProject(pointer)
+      } else {
+        // 指针缺失或悬空：当前启动状态注册为新项目（库空=老工程迁移；库非空=孤儿注册，避免把启动态错绑到旧条目上）
+        const id = createProjectId()
+        const current = latestProjectRef.current
+        const data = entries.length
+          ? { ...current, settings: { ...current?.settings, name: uniqueProjectName(entries.map(entry => entry.name), current?.settings?.name || '未命名场景') } }
+          : current
+        try {
+          await putEntry(makeEntryFromProject(id, data, Date.now()))
+        } catch {
+          storeUnavailableRef.current = true
+          setStoreUnavailable(true)
+          return
+        }
+        adoptProject(id)
+      }
+      await refreshLibrary()
+    }
+    ensureBoot()
+  }, [])
+
+  useEffect(() => { if (rightTab === 'projects') refreshLibrary() }, [rightTab])
+
+  // 新工程注册延迟一拍到 latestProjectRef 提交后再落库（startNewProject/importProjectFile 共用）。
+  // 本 effect 定义于上方 latestProjectRef 赋值 effect 之后：同一次提交的被动 effect 按定义顺序执行，
+  // 必定读到重置/导入后的新值——确定性替代定时器，不受主线程卡顿影响。
+  useEffect(() => {
+    if (!pendingRegistrationId) return
+    putEntry(makeEntryFromProject(pendingRegistrationId, latestProjectRef.current, Date.now()))
+      .then(refreshLibrary)
+      .catch(() => {})
+  }, [pendingRegistrationId])
 
   const applyProjectSnapshot = useCallback(snapshot => {
     const normalized = normalizeProjectData(snapshot)
@@ -2252,7 +2333,7 @@ export default function App() {
       exportLockRef.current = false
     }
   }
-  const loadProject = event => {
+  const importProjectFile = event => {
     const file = event.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
@@ -2260,22 +2341,13 @@ export default function App() {
       try {
         const loaded = normalizeProjectData(JSON.parse(reader.result))
         if (!loaded) throw new Error('invalid project')
-        setSettings(loaded.settings)
-        setShots(loaded.shots)
-        setActiveShotId(loaded.activeShotId)
-        setObjects(loaded.objects)
-        setCamera(loaded.camera)
-        setLighting(loaded.lighting)
-        setReference(loaded.reference)
-        setKeyframes(loaded.keyframes)
-        setCharacterKeyframes(loaded.objectKeyframes)
-        setObjectDrafts({})
-        setSelectedKeyframe(null)
-        setCurrentFrame(0)
-        currentFrameRef.current = 0
-        setPlaying(false)
+        flushCurrentProject().catch(() => {})
+        const id = createProjectId()
+        applyProjectSnapshot(loaded)
+        adoptProject(id)
         setSettingsOpen(false)
-        setSelectedId(CAMERA_ID)
+        // 与快照 setState 同批提交：注册 effect 在 latestProjectRef 更新后落库（见上方 pendingRegistrationId effect）
+        setPendingRegistrationId(id)
         setToast(`工程已打开 · ${loaded.shots.length} 个镜头`)
       } catch { setToast('工程文件无法读取') }
     }
@@ -2304,18 +2376,126 @@ export default function App() {
     setToast('已新建空关键帧工程 · 可在时间轴右侧设置时长')
   }
 
+  // ===== S8 项目库操作（逻辑在 src/projects/projectStore.js；此处只做状态接线与降级）=====
+  const adoptProject = id => {
+    activeProjectIdRef.current = id
+    setActiveProjectId(id)
+    try { localStorage.setItem(ACTIVE_PROJECT_KEY, id) } catch { /* 指针写失败不阻断，boot 会回退 */ }
+  }
+  const refreshLibrary = async () => {
+    if (storeUnavailableRef.current) return
+    try {
+      setLibraryEntries(await listEntries())
+      setLibraryVersion(version => version + 1)
+    } catch { /* 列表刷新失败保留旧列表，具体操作自身已有 toast */ }
+  }
+  const flushCurrentProject = async () => {
+    const id = activeProjectIdRef.current
+    if (!id || storeUnavailableRef.current) return
+    await putEntry(makeEntryFromProject(id, latestProjectRef.current, Date.now()))
+  }
+  const beginLibraryOp = () => {
+    if (libraryBusyRef.current) return false
+    libraryBusyRef.current = true
+    setLibraryBusy(true)
+    return true
+  }
+  const endLibraryOp = () => {
+    libraryBusyRef.current = false
+    setLibraryBusy(false)
+  }
+  const openProject = async id => {
+    if (id === activeProjectIdRef.current || !beginLibraryOp()) return
+    try {
+      await flushCurrentProject()
+      const entry = await getEntry(id)
+      if (!entry) { setToast('项目不存在或已删除'); return }
+      applyProjectSnapshot(entry.data)
+      adoptProject(id)
+      setToast(`已切换到“${entry.name}”`)
+      await refreshLibrary()
+    } catch { setToast('打开项目失败') } finally { endLibraryOp() }
+  }
+  const startNewProject = () => {
+    flushCurrentProject().catch(() => {})
+    if (storeUnavailableRef.current) { resetProject(); return }
+    const id = createProjectId()
+    resetProject()
+    adoptProject(id)
+    // 与 resetProject 的 setState 同批提交：注册 effect 在 latestProjectRef 更新后落库，防 900ms 内关页丢失
+    setPendingRegistrationId(id)
+    refreshLibrary()
+  }
+  const duplicateProject = async id => {
+    if (!beginLibraryOp()) return
+    try {
+      if (id === activeProjectIdRef.current) await flushCurrentProject() // 复制活动项目须含未落库的最新编辑
+      const source = await getEntry(id)
+      if (!source) { setToast('项目不存在或已删除'); return }
+      const entries = await listEntries()
+      const copyId = createProjectId()
+      const name = uniqueProjectName(entries.map(entry => entry.name), `${source.name} 副本`)
+      const data = { ...source.data, settings: { ...source.data?.settings, name } }
+      await putEntry(makeEntryFromProject(copyId, data, Date.now()))
+      await refreshLibrary()
+      setToast(`已复制为“${name}”`)
+    } catch { setToast('复制项目失败') } finally { endLibraryOp() }
+  }
+  const renameProject = async (id, name) => {
+    const nextName = String(name || '').trim().slice(0, 40)
+    if (!nextName || !beginLibraryOp()) return
+    try {
+      // 仅活动项目需要 flush（读改写防回退未落库编辑）；非活动条目 flush 会无谓刷新活动项目 updatedAt、扰乱列表排序
+      if (id === activeProjectIdRef.current) await flushCurrentProject()
+      const entry = await getEntry(id)
+      if (!entry) { setToast('项目不存在或已删除'); return }
+      const data = { ...entry.data, settings: { ...entry.data?.settings, name: nextName } }
+      await putEntry({ ...entry, name: nextName, data, updatedAt: Date.now() })
+      if (id === activeProjectIdRef.current) setSettings(current => ({ ...current, name: nextName }))
+      await refreshLibrary()
+      setToast(`已重命名为“${nextName}”`)
+    } catch { setToast('重命名失败') } finally { endLibraryOp() }
+  }
+  const deleteProject = async id => {
+    if (id === activeProjectIdRef.current || !beginLibraryOp()) return
+    try {
+      const entry = await getEntry(id)
+      if (!entry) { setToast('项目不存在或已删除'); await refreshLibrary(); return }
+      if (!window.confirm(`删除项目“${entry.name}”？该操作不可恢复`)) return
+      await deleteEntry(id)
+      await refreshLibrary()
+      setToast(`已删除“${entry.name}”`)
+    } catch { setToast('删除项目失败') } finally { endLibraryOp() }
+  }
+  const exportProject = async id => {
+    if (!beginLibraryOp()) return
+    try {
+      if (id === activeProjectIdRef.current) await flushCurrentProject() // 导出活动项目须含未落库的最新编辑
+      const entry = await getEntry(id)
+      if (!entry) { setToast('项目不存在或已删除'); return }
+      const blob = new Blob([JSON.stringify(entry.data, null, 2)], { type: 'application/json' })
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      const safeName = String(entry.name || '').replace(/[\\/:*?"<>|]+/g, '-').trim() || 'monoform-project'
+      link.download = `${safeName}.monoform.json`
+      link.click()
+      URL.revokeObjectURL(link.href)
+      setToast('工程 JSON 已导出')
+    } catch { setToast('导出项目失败') } finally { endLibraryOp() }
+  }
+
   return (
     <main className="app-shell" aria-busy={exporting || capturingImage}>
       <header className="topbar">
         <div className="brand-mark">
-          <span className="brand-glyph"><img src={BRAND_MARK_URL} alt="" /></span>
+          <span className="brand-glyph"><img src={BRAND_AVATAR_URL} alt="" /></span>
           <div><strong>MONOFORM</strong><small>PREVIS STUDIO · 白模预演</small></div>
         </div>
         <nav className="top-actions">
-          <button onClick={resetProject}><Plus size={14} /> 新建</button>
+          <button onClick={startNewProject}><Plus size={14} /> 新建</button>
           <button onClick={() => loadRef.current?.click()}><FolderOpen size={14} /> 打开</button>
           <button onClick={() => saveProject()}><Save size={14} /> 保存</button>
-          <input ref={loadRef} className="visually-hidden" type="file" accept=".json" onChange={loadProject} />
+          <input ref={loadRef} className="visually-hidden" type="file" accept=".json" onChange={importProjectFile} />
           <span className="top-divider" />
           <ToolButton icon={Undo2} label="撤销" shortcut="Ctrl+Z" onClick={undo} disabled={!historyRef.current.past.length} />
           <ToolButton icon={Redo2} label="重做" shortcut="Ctrl+Y" onClick={redo} disabled={!historyRef.current.future.length} />
@@ -2411,10 +2591,26 @@ export default function App() {
           </div>
         </section>
         <div className="right-panel-tabs dg-panel-tabs">
-          <button type="button" className={!promptTabOpen ? 'is-active' : ''} onClick={() => setPromptTabOpen(false)}>属性</button>
-          <button type="button" className={promptTabOpen ? 'is-active' : ''} onClick={() => setPromptTabOpen(true)}>机位词</button>
+          <button type="button" className={rightTab === 'inspector' ? 'is-active' : ''} onClick={() => setRightTab('inspector')}>属性</button>
+          <button type="button" className={rightTab === 'prompt' ? 'is-active' : ''} onClick={() => setRightTab('prompt')}>机位词</button>
+          <button type="button" className={rightTab === 'projects' ? 'is-active' : ''} onClick={() => setRightTab('projects')}>项目</button>
         </div>
-        {promptTabOpen ? (
+        {rightTab === 'projects' ? (
+          <aside className="right-sidebar panel">
+            <ProjectsPanel
+              entries={libraryEntries}
+              activeProjectId={activeProjectId}
+              busy={libraryBusy}
+              unavailable={storeUnavailable}
+              onOpen={openProject}
+              onNew={startNewProject}
+              onDuplicate={duplicateProject}
+              onRename={renameProject}
+              onDelete={deleteProject}
+              onExport={exportProject}
+            />
+          </aside>
+        ) : rightTab === 'prompt' ? (
           <aside className="right-sidebar panel">
             <PromptPanel
               layers={promptResult.layers}

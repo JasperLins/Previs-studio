@@ -221,3 +221,17 @@ exportDiagram SVG 纯函数渲染（A4 白底/图例/比例尺/全符号）+ 栅
 ### Status
 
 [OK] **Completed**
+
+## Session 11: Phase 1 多项目库（S8）
+
+**Date**: 2026-10-24
+**Task**: 10-24-project-library
+**Branch**: `class`
+
+### Summary
+
+ComfyUI 式项目库：IndexedDB `monoform-projects` 权威存储 + localStorage 双键（全量缓存+活动指针），右侧栏第三页签「项目」（新建/打开/复制/更名/删除/导出）。修复单槽 localStorage 点新建即覆盖丢工程的数据丢失陷阱。新模块 src/projects/（projectStore 19 单测 + ProjectsPanel）；接缝 S8 登记。check 修 4 缺陷（注册时序竞态改 pendingRegistrationId effect、重命名非活动项目排序抖动、复制/导出活动项目 flush）。IAB 真浏览器冒烟：迁移/新建保留/刷新恢复/打开还原全过。CloudBase 静态部署零影响，全班并发各浏览器隔离。
+
+### Status
+
+[OK] **Completed**

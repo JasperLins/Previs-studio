@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/fork-discipline.md", "reason": "上游文件改动纪律：接缝 S8、新文件承载逻辑、styles.css 末尾追加 dg- 类、零新依赖"}
+{"file": ".trellis/spec/base-audit.md", "reason": "基座文件地图与状态模型（localStorage/normalize/持久化节）+ S8 接缝定义"}
+{"file": ".trellis/spec/prompt-compiler.md", "reason": "diagram 扩展字段须随工程完整入库/还原（acceptance 涉及机位词还原）"}
