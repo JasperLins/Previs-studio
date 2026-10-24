@@ -522,3 +522,23 @@ button:disabled { opacity: .28; cursor: not-allowed !important; }
 .dg-layer-lock.is-active { border-color: #f97316; color: #f97316; }
 .dg-annotation-node { position: absolute; left: 0; top: 0; z-index: 4; min-width: 14px; height: 14px; border-radius: 50%; background: #33322e; color: #fff; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 9px; font-weight: 700; line-height: 14px; text-align: center; pointer-events: none; }
 .dg-ghost-label { position: absolute; left: 0; top: 0; z-index: 4; padding: 1px 5px; border-radius: 3px; background: rgba(107, 114, 128, .55); color: #f3f1ea; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 10px; white-space: nowrap; pointer-events: none; }
+
+/* ===== T06 机位词面板（dg- 前缀，追加区） ===== */
+.dg-panel-tabs { display: flex; gap: 4px; justify-content: flex-end; padding: 4px 10px 0; }
+.dg-panel-tabs button { padding: 3px 10px; border: 1px solid #555653; border-radius: 5px 5px 0 0; background: #262723; color: #b9b3a6; font-size: 11px; cursor: pointer; }
+.dg-panel-tabs button.is-active { background: #33322e; color: #eceade; border-bottom-color: #33322e; }
+.dg-prompt-panel { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px; height: 100%; overflow-y: auto; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+.dg-prompt-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.dg-prompt-head strong { font-size: 12px; color: #eceade; }
+.dg-prompt-actions { display: flex; gap: 6px; }
+.dg-prompt-actions button { padding: 3px 9px; border: 1px solid #555653; border-radius: 4px; background: #262723; color: #eceade; font-size: 11px; cursor: pointer; }
+.dg-prompt-actions button:hover { border-color: #22c55e; }
+.dg-prompt-layers { display: flex; flex-direction: column; gap: 6px; }
+.dg-prompt-layer { padding: 6px 8px; border: 1px solid #3c3d39; border-radius: 5px; background: #262723; }
+.dg-prompt-layer > span { display: block; font-size: 9px; letter-spacing: .1em; color: #8f897c; margin-bottom: 3px; }
+.dg-prompt-layer p { margin: 0; font-size: 11px; line-height: 1.55; color: #eceade; word-break: break-all; }
+.dg-prompt-layer.is-action textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 40px; padding: 4px 6px; border: 1px solid #555653; border-radius: 4px; background: #1d1e1b; color: #eceade; font-family: inherit; font-size: 11px; }
+.dg-prompt-card { padding: 8px; border: 1px dashed #555653; border-radius: 5px; background: #1d1e1b; }
+.dg-prompt-card > span { display: block; font-size: 9px; letter-spacing: .1em; color: #8f897c; margin-bottom: 4px; }
+.dg-prompt-card pre { margin: 0; white-space: pre-wrap; font-family: inherit; font-size: 11px; line-height: 1.6; color: #eceade; }
+.dg-prompt-toast { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); padding: 4px 12px; border-radius: 4px; background: #22c55e; color: #fff; font-size: 11px; pointer-events: none; }

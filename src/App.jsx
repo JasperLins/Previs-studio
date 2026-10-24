@@ -15,6 +15,8 @@ import { TopViewOverlay } from './diagram/TopViewOverlay.jsx'
 import { camLetter, nearestInFramePerson } from './diagram/gizmos/frustum.js'
 import { objectToView, shotToView } from './diagram/stateAdapter.js'
 import { axisSide, isCrossing, pathPoints, pickGhostShots, resolveAxisPair, resolveGazes } from './diagram/annotations/data.js'
+import { compileShot } from './diagram/promptCompiler/compile.js'
+import { PromptPanel } from './diagram/promptCompiler/PromptPanel.jsx'
 
 const CAMERA_ID = '__shot_camera__'
 const PROJECT_STORAGE_KEY = 'monoform-project'
@@ -1364,13 +1366,42 @@ export default function App() {
     return side !== axisBaselineRef.current.side
   }, [annotationData.axis, displayCamera.position])
 
+  // ===== T06 提示词编译（机位词面板数据；景别与标签牌同源）=====
+  const promptObjects = useMemo(() => animatedObjects.map(object => ({
+    ...objectToView(object),
+    position: object.position,
+    rotation: object.rotation,
+    poseLabel: poseLabel(object.pose),
+  })), [animatedObjects])
+  const promptResult = useMemo(() => {
+    const activeIndex = shots.findIndex(shot => shot.id === activeShotId)
+    const prevShot = activeIndex > 0 ? shots[activeIndex - 1] : null
+    let prevSummary = null
+    if (prevShot) {
+      const prev = compileShot({
+        objects: (prevShot.objects || []).map(object => ({ ...objectToView(object), position: object.position, rotation: object.rotation, poseLabel: poseLabel(object.pose) })),
+        camera: prevShot.camera || displayCamera,
+        diagram,
+      })
+      prevSummary = { subjectName: prev.meta.subjectName, screenXOfSubject: prev.meta.subjectScreenX }
+    }
+    return compileShot({
+      objects: promptObjects,
+      camera: displayCamera,
+      diagram,
+      prevSummary,
+      actionLine: diagram.promptDrafts?.[activeShotId]?.actionLine || '',
+    })
+  }, [activeShotId, diagram, displayCamera, promptObjects, shots])
+  const [promptTabOpen, setPromptTabOpen] = useState(false)
+
   const cameraGizmo = useMemo(() => {
     const meta = diagram.shotMeta?.[activeShotId]
     const manualLetter = typeof meta?.camLetter === 'string' && meta.camLetter ? meta.camLetter : null
     const shotIndex = Math.max(0, shots.findIndex(shot => shot.id === activeShotId))
     const subject = nearestInFramePerson(displayCamera, animatedObjects)
-    return { on: diagram.layers?.frustum !== false, letter: manualLetter || camLetter(shotIndex), subjectName: subject?.name || '', warned: axisWarned }
-  }, [activeShotId, animatedObjects, axisWarned, diagram, displayCamera, shots])
+    return { on: diagram.layers?.frustum !== false, letter: manualLetter || camLetter(shotIndex), subjectName: subject?.name || '', warned: axisWarned, shotSize: promptResult?.meta?.shotSize || '' }
+  }, [activeShotId, animatedObjects, axisWarned, diagram, displayCamera, promptResult, shots])
   const currentProject = useMemo(() => projectData({
     settings,
     objects,
@@ -2299,7 +2330,25 @@ export default function App() {
             </div>}
           </div>
         </section>
+        <div className="right-panel-tabs dg-panel-tabs">
+          <button type="button" className={!promptTabOpen ? 'is-active' : ''} onClick={() => setPromptTabOpen(false)}>属性</button>
+          <button type="button" className={promptTabOpen ? 'is-active' : ''} onClick={() => setPromptTabOpen(true)}>机位词</button>
+        </div>
+        {promptTabOpen ? (
+          <aside className="right-sidebar panel">
+            <PromptPanel
+              layers={promptResult.layers}
+              text={promptResult.text}
+              actionLine={diagram.promptDrafts?.[activeShotId]?.actionLine || ''}
+              onActionChange={value => setDiagram(prev => patchDiagram(prev, { promptDrafts: { [activeShotId]: { actionLine: value } } }))}
+              shotName={shots.find(shot => shot.id === activeShotId)?.name}
+              projectName={settings.name}
+              onToast={setToast}
+            />
+          </aside>
+        ) : (
         <Inspector selected={inspectorSelected} camera={camera} selectedJoint={selectedJoint} customPoses={customPoses} onSelectJoint={setSelectedJoint} onUpdateObject={updateSelected} onUpdateCamera={patch => setCamera(current => ({ ...current, ...patch }))} onDelete={deleteSelected} onDuplicate={duplicateSelected} onFocus={focusSelected} onToggleLock={() => activeObject && updateSelected({ locked: !activeObject.locked })} onGround={groundSelected} onResetRotation={resetSelectedRotation} onResetScale={resetSelectedScale} onSaveCustomPose={saveCustomPose} onApplyCustomPose={applyCustomPose} onDeleteCustomPose={deleteCustomPose} />
+        )}
         <Timeline
           currentFrame={currentFrame}
           fps={fps}

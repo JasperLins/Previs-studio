@@ -1268,7 +1268,7 @@ function EditorScene({ objects, selectedId, activeJoint, onSelect, onJointSelect
       {topView && <TopViewGrid radius={topViewRadius} showGrid={topViewGrid} showHalfGrid={topViewHalfGrid} />}
       {objects.map(object => <SceneObject key={object.id} data={object} selected={selectedId === object.id} selectedId={selectedId} activeJoint={activeJoint} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} planeLock={planeLock} onSelect={onSelect} onJointSelect={onJointSelect} onUpdate={onUpdateObject} animationTime={animationTime} />)}
       {!cameraView && <CameraModel data={cameraData} selected={selectedId === CAMERA_ID} selectedId={selectedId} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} planeLock={planeLock} onSelect={onSelect} onUpdate={onUpdateCamera} />}
-      {!cameraView && cameraGizmo?.on && <CameraGizmo cameraData={cameraData} objects={objects} letter={cameraGizmo.letter} subjectName={cameraGizmo.subjectName} warned={Boolean(cameraGizmo.warned)} />}
+      {!cameraView && cameraGizmo?.on && <CameraGizmo cameraData={cameraData} objects={objects} letter={cameraGizmo.letter} subjectName={cameraGizmo.subjectName} warned={Boolean(cameraGizmo.warned)} shotSize={cameraGizmo?.shotSize || ''} />}
       {!cameraView && <AnnotationLayer annotations={annotations} />}
       {topView && <SymbolLayer objects={objects} selectedId={selectedId} onSelect={onSelect} labelsOn={symbolLayer?.labels !== false} />}
       <ContactShadows position={[0, 0.01, 0]} opacity={0.42} scale={18} blur={2.4} far={9} />

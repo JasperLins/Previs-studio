@@ -112,7 +112,7 @@ export function CameraSymbol({
 }
 
 // ===== 机位 Gizmo 本体：CameraSymbol + 标签牌（T03 行为零回退：内容/翻转/焦距联动） =====
-export function CameraGizmo({ cameraData, objects, letter = 'A', subjectName = '', warned = false }) {
+export function CameraGizmo({ cameraData, objects, letter = 'A', subjectName = '', warned = false, shotSize = '' }) {
   const labelRef = useRef(null)   // 标签 DOM：每帧投影定位 + 边缘翻转 class
   const size = useThree(state => state.size)
   const gl = useThree(state => state.gl)
@@ -128,7 +128,7 @@ export function CameraGizmo({ cameraData, objects, letter = 'A', subjectName = '
     strong.textContent = `Cam ${letter}${subjectName ? ` · ${subjectName}` : ''}`
     el.appendChild(strong)
     const focal = Math.round(Number(cameraData?.focalLength) || 0)
-    for (const text of ['景别待 T06', `${focal}mm`]) {
+    for (const text of [shotSize || '—', `${focal}mm`]) {
       const span = document.createElement('span')
       span.textContent = text
       el.appendChild(span)
@@ -139,7 +139,7 @@ export function CameraGizmo({ cameraData, objects, letter = 'A', subjectName = '
       labelRef.current = null
       if (el.parentNode === host) host.removeChild(el)
     }
-  }, [gl, letter, subjectName, cameraData?.focalLength])
+  }, [gl, letter, subjectName, cameraData?.focalLength, shotSize])
 
   // 视锥参数（角度/锥长全部经 frustum.js）
   const hfovDeg = horizontalFovDeg(cameraData?.focalLength)
