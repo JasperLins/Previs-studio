@@ -96,3 +96,25 @@ frustum.js 纯函数（20 测：六档焦距双校验/入画/锥长/字母）+ C
 ### Status
 
 [OK] **Completed**
+
+
+## Session 5: T04 顶视符号替换
+
+**Date**: 2026-10-24
+**Task**: T04 顶视符号替换
+**Branch**: `class`
+
+### Summary
+
+symbols/geometry.js（足迹/薄墙/姿势映射/铰链弧，13 测）+ SymbolLayer（四类替换+椅背线+足迹描边+代理框+可点选+LabelsHost）；浏览器实测三朝向常量全部定号（人物刻度=3D 面向、门弧北张西铰、椅背同侧）、姿势三变体切换、进出数据完整；Shot Designer 对照经用户实机过目后指示继续（通过）。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7bfb7d1` | (see git log) |
+| `0f4fcc1` | (see git log) |
+
+### Status
+
+[OK] **Completed**

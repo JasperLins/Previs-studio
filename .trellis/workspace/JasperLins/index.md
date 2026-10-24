@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 4
+- **Total Sessions**: 5
 - **Last Active**: 2026-10-24
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~98 | Active |
+| `journal-1.md` | ~120 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 5 | 2026-10-24 | T04 顶视符号替换 | `7bfb7d1`, `0f4fcc1` | `class` |
 | 4 | 2026-10-24 | T03 机位视锥 Gizmo 与标签牌 | `2fca5e6`, `14eac65` | `class` |
 | 3 | 2026-10-24 | T02 顶视正交编辑视图与地面约束编辑 | `06aa9ed`, `e9a8f89` | `class` |
 | 2 | 2026-10-24 | T01 适配层与 diagram 数据 | `cd0196f`, `232b4b8`, `40bc601` | `class` |
