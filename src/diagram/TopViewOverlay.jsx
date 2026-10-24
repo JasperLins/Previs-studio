@@ -113,7 +113,7 @@ function LayerPanel({ diagram, objects, onPatchDiagram, canvasLocked, onToggleLo
   )
 }
 
-export function TopViewOverlay({ worldPerPx = 0, onExit, gridOn = true, onToggleGrid, halfGridOn = true, onToggleHalfGrid, diagram = null, objects = [], onPatchDiagram, canvasLocked = false, onToggleLock }) {
+export function TopViewOverlay({ worldPerPx = 0, onExit, onExportDiagram, gridOn = true, onToggleGrid, halfGridOn = true, onToggleHalfGrid, diagram = null, objects = [], onPatchDiagram, canvasLocked = false, onToggleLock }) {
   const [panelOpen, setPanelOpen] = useState(true)
   const bar = pickScaleBar(worldPerPx)
   return (
@@ -135,6 +135,7 @@ export function TopViewOverlay({ worldPerPx = 0, onExit, gridOn = true, onToggle
         ) : <span className="dg-scale-read dg-scale-pending">比例尺待缩放上报</span>}
       </div>
       <div className="dg-topview-actions">
+        {onExportDiagram && <button type="button" onClick={onExportDiagram} title="导出白底机位图 PNG（含符号/标签/图例/比例尺）">导出机位图</button>}
         <button type="button" className={gridOn ? 'is-active' : ''} onClick={onToggleGrid} title="顶视米制网格（随工程保存）">网格</button>
         <button type="button" className={halfGridOn ? 'is-active' : ''} onClick={onToggleHalfGrid} disabled={!gridOn} title="0.5m 次格（本次会话）">0.5m</button>
         <button type="button" className="dg-topview-exit" onClick={onExit}>退出顶视</button>

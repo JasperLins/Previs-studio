@@ -17,6 +17,8 @@ import { objectToView, shotToView } from './diagram/stateAdapter.js'
 import { axisSide, isCrossing, pathPoints, pickGhostShots, resolveAxisPair, resolveGazes } from './diagram/annotations/data.js'
 import { compileShot } from './diagram/promptCompiler/compile.js'
 import { PromptPanel } from './diagram/promptCompiler/PromptPanel.jsx'
+import { buildShotDiagramSvg } from './diagram/exportDiagram/svg.js'
+import { svgToPngBlob } from './diagram/exportDiagram/raster.js'
 
 const CAMERA_ID = '__shot_camera__'
 const PROJECT_STORAGE_KEY = 'monoform-project'
@@ -1402,6 +1404,34 @@ export default function App() {
   }, [activeShotId, characterKeyframes, diagram, displayCamera, fps, keyframes, promptObjects, settings.durationSeconds, shots])
   const [promptTabOpen, setPromptTabOpen] = useState(false)
 
+  // T07 机位图导出：中性数据 → SVG（纯函数）→ PNG 下载
+  const handleExportDiagram = () => {
+    const svg = buildShotDiagramSvg({
+      objects: promptObjects,
+      camera: displayCamera,
+      ghosts: annotationData.ghosts,
+      axis: annotationData.axis,
+      gazes: annotationData.gazes,
+      cameraTrack: annotationData.cameraTrack.map(point => ({ frame: point.frame, position: [point.x, 1.6, point.z], yaw: 0, focalLength: displayCamera.focalLength })),
+      objectTracks: annotationData.objectTracks,
+      layers: diagram.layers,
+      shotName: shots.find(shot => shot.id === activeShotId)?.name || '镜头',
+      projectName: settings.name,
+      letter: cameraGizmo.letter,
+      shotSize: promptResult.meta.shotSize,
+      warned: axisWarned,
+    })
+    svgToPngBlob(svg, 2).then(blob => {
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      const safe = value => String(value || '').replace(/[\/:*?"<>|]+/g, '-').trim()
+      link.download = `${safe(settings.name) || '工程'}_${safe(shots.find(shot => shot.id === activeShotId)?.name) || '镜头'}_机位图.png`
+      link.click()
+      URL.revokeObjectURL(link.href)
+      setToast('机位图已导出')
+    }).catch(() => setToast('机位图导出失败'))
+  }
+
   const cameraGizmo = useMemo(() => {
     const meta = diagram.shotMeta?.[activeShotId]
     const manualLetter = typeof meta?.camLetter === 'string' && meta.camLetter ? meta.camLetter : null
@@ -2312,6 +2342,7 @@ export default function App() {
                   onPatchDiagram={patch => setDiagram(prev => patchDiagram(prev, patch))}
                   canvasLocked={canvasLocked}
                   onToggleLock={() => setCanvasLocked(value => !value)}
+                  onExportDiagram={handleExportDiagram}
                 />
               )}
             </div>
