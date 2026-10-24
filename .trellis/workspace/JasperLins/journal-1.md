@@ -162,3 +162,26 @@ promptCompiler 四模块（映射档位/纯投影含 36×24 画幅裁切与高�
 ### Status
 
 [OK] **Completed**
+
+
+## Session 8: T06b 运动层与生成版输出
+
+**Date**: 2026-10-24
+**Task**: T06b 运动层与生成版输出
+**Branch**: `class`
+
+### Summary
+
+运动层（机位六型推导+节奏词+人物走位/姿势切换+时长，阈值 0.3m/8°/5mm）、站位语句化、生成版复制；用户委托 8 场景测试打分 9.5/10，抓出并修复跟拍误判（推拉配对主体轨首末位置）；spec §6 先行；127/127 测试。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8b8a839` | (see git log) |
+| `13bc534` | (see git log) |
+| `33e9247` | (see git log) |
+
+### Status
+
+[OK] **Completed**
