@@ -7,6 +7,7 @@ import { poseForObject, presetDefinition } from './rig.js'
 import { applyPlaneLock } from './diagram/topView.js'
 import { TopViewControls } from './diagram/TopViewControls.jsx'
 import { TopViewGrid } from './diagram/TopViewGrid.jsx'
+import { CameraGizmo } from './diagram/gizmos/CameraGizmo.jsx'
 
 const CAMERA_ID = '__shot_camera__'
 const BUILT_IN_MODEL_URL = `${import.meta.env.BASE_URL}models/xbot-animated.glb`
@@ -1252,7 +1253,7 @@ function EditorCameraReporter({ enabled, onChange }) {
   return null
 }
 
-function EditorScene({ objects, selectedId, activeJoint, onSelect, onJointSelect, transformMode, transformSpace, snapEnabled, groundRequest, planeLock = false, onUpdateObject, cameraData, cameraAspect, onUpdateCamera, editorCameraData, onEditorCameraChange, lighting, showGrid, focusRequest, referenceVisible = false, cameraView = false, topView = false, topViewCenter = [0, 0], topViewRadius = 6, topViewGrid = true, topViewHalfGrid = true, onTopViewportReport, animationTime = 0 }) {
+function EditorScene({ objects, selectedId, activeJoint, onSelect, onJointSelect, transformMode, transformSpace, snapEnabled, groundRequest, planeLock = false, onUpdateObject, cameraData, cameraAspect, onUpdateCamera, editorCameraData, onEditorCameraChange, lighting, showGrid, focusRequest, referenceVisible = false, cameraView = false, topView = false, topViewCenter = [0, 0], topViewRadius = 6, topViewGrid = true, topViewHalfGrid = true, onTopViewportReport, animationTime = 0, cameraGizmo = null }) {
   return (
     <>
       {!referenceVisible && !topView && <color attach="background" args={['#555653']} />}
@@ -1263,6 +1264,7 @@ function EditorScene({ objects, selectedId, activeJoint, onSelect, onJointSelect
       {topView && <TopViewGrid radius={topViewRadius} showGrid={topViewGrid} showHalfGrid={topViewHalfGrid} />}
       {objects.map(object => <SceneObject key={object.id} data={object} selected={selectedId === object.id} selectedId={selectedId} activeJoint={activeJoint} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} planeLock={planeLock} onSelect={onSelect} onJointSelect={onJointSelect} onUpdate={onUpdateObject} animationTime={animationTime} />)}
       {!cameraView && <CameraModel data={cameraData} selected={selectedId === CAMERA_ID} selectedId={selectedId} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} planeLock={planeLock} onSelect={onSelect} onUpdate={onUpdateCamera} />}
+      {!cameraView && cameraGizmo?.on && <CameraGizmo cameraData={cameraData} objects={objects} letter={cameraGizmo.letter} subjectName={cameraGizmo.subjectName} />}
       <ContactShadows position={[0, 0.01, 0]} opacity={0.42} scale={18} blur={2.4} far={9} />
       {cameraView ? <PreviewCameraController cameraData={cameraData} cameraAspect={cameraAspect} /> : topView ? <TopViewControls center={topViewCenter} radius={topViewRadius} onViewportReport={onTopViewportReport} /> : <OrbitControls makeDefault target={editorCameraData?.target || [0, 1, 0]} minDistance={2} maxDistance={35} maxPolarAngle={Math.PI * 0.49} />}
       <EditorCameraReporter enabled={!cameraView && !topView} onChange={onEditorCameraChange} />

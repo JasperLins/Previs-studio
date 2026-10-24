@@ -12,6 +12,7 @@ import { JOINT_DEFINITIONS, JOINT_GROUPS, RIG_PRESET_GROUPS, RIG_PRESET_OPTIONS,
 import { normalizeDiagram, patchDiagram } from './diagram/diagramData.js'
 import { computeTopViewBounds, isTopView, worldPerPixel } from './diagram/topView.js'
 import { TopViewOverlay } from './diagram/TopViewOverlay.jsx'
+import { camLetter, nearestInFramePerson } from './diagram/gizmos/frustum.js'
 
 const CAMERA_ID = '__shot_camera__'
 const PROJECT_STORAGE_KEY = 'monoform-project'
@@ -1331,6 +1332,14 @@ export default function App() {
   const topViewActive = isTopView({ topView, cameraView })
   const topViewCenter = topViewFit?.center || [0, 0]
   const topViewRadius = topViewFit?.radius || 6
+  // T03 机位 Gizmo 传参（逻辑在 src/diagram/）：字母 shotMeta 手填优先、否则按镜序；对象名取最近入画人物
+  const cameraGizmo = useMemo(() => {
+    const meta = diagram.shotMeta?.[activeShotId]
+    const manualLetter = typeof meta?.camLetter === 'string' && meta.camLetter ? meta.camLetter : null
+    const shotIndex = Math.max(0, shots.findIndex(shot => shot.id === activeShotId))
+    const subject = nearestInFramePerson(displayCamera, animatedObjects)
+    return { on: diagram.layers?.frustum !== false, letter: manualLetter || camLetter(shotIndex), subjectName: subject?.name || '' }
+  }, [activeShotId, animatedObjects, diagram, displayCamera, shots])
   const currentProject = useMemo(() => projectData({
     settings,
     objects,
@@ -2219,7 +2228,7 @@ export default function App() {
           <ViewportAspectPicker value={camera.aspectRatio} onChange={aspectRatio => setCamera(current => ({ ...current, aspectRatio }))} />
           <ReferenceOverlay reference={reference} onChange={setReference} onToast={setToast} cameraMode={cameraView} cameraAspect={previewAspect}>
             <div className={`viewport-canvas-layer ${topViewActive ? 'dg-topview' : ''}`}>
-              <MainViewport key={cameraView ? 'shot-view' : topView ? 'top-view' : 'scene-view'} cameraView={cameraView} cameraAspect={previewAspect} editorCameraData={editorView} onEditorCameraChange={captureEditorView} objects={animatedObjects} animationTime={currentFrame / fps} selectedId={selectedId} activeJoint={selectedJoint} onSelect={setSelectedId} onJointSelect={(objectId, jointId) => { setSelectedId(objectId); setSelectedJoint(jointId) }} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} planeLock={topViewActive} onUpdateObject={updateObjectById} cameraData={displayCamera} onUpdateCamera={patch => setCamera(current => ({ ...current, ...patch }))} lighting={lighting} showGrid={showGrid} focusRequest={viewFocusRequest} referenceVisible={Boolean(reference.image && reference.visible)} topView={topView} topViewCenter={topViewCenter} topViewRadius={topViewRadius} topViewGrid={diagram.layers.grid} topViewHalfGrid={topViewHalfGrid} onTopViewportReport={handleTopViewReport} />
+              <MainViewport key={cameraView ? 'shot-view' : topView ? 'top-view' : 'scene-view'} cameraView={cameraView} cameraAspect={previewAspect} editorCameraData={editorView} onEditorCameraChange={captureEditorView} objects={animatedObjects} animationTime={currentFrame / fps} selectedId={selectedId} activeJoint={selectedJoint} onSelect={setSelectedId} onJointSelect={(objectId, jointId) => { setSelectedId(objectId); setSelectedJoint(jointId) }} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} planeLock={topViewActive} onUpdateObject={updateObjectById} cameraData={displayCamera} onUpdateCamera={patch => setCamera(current => ({ ...current, ...patch }))} lighting={lighting} showGrid={showGrid} focusRequest={viewFocusRequest} referenceVisible={Boolean(reference.image && reference.visible)} topView={topView} topViewCenter={topViewCenter} topViewRadius={topViewRadius} topViewGrid={diagram.layers.grid} topViewHalfGrid={topViewHalfGrid} onTopViewportReport={handleTopViewReport} cameraGizmo={cameraGizmo} />
               {topViewActive && (
                 <TopViewOverlay
                   worldPerPx={worldPerPixel(topViewZoom)}

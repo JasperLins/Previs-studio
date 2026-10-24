@@ -27,7 +27,9 @@
 
 ## 回归清单（每次同步与每期发布必跑）
 
-> 自动化验证注意（T02 实测）：浏览器自动化（CDP/IAB 合成输入）**滚轮缩放、DOM 点击、键盘可用**，但**无法驱动 three.js TransformControls 的鼠标拖拽**（悬停无光标反馈、拖动无响应；在未改动的上游代码上同样如此，非本 fork 引入）。凡「拖 gizmo」类验收项须人工执行或改用面板滑杆路径验证状态链路。
+> 自动化验证注意（T02/T03 实测）：浏览器自动化（CDP/IAB 合成输入）**滚轮缩放、DOM 点击、键盘可用**，但**无法驱动 three.js TransformControls 的鼠标拖拽**（悬停无光标反馈、拖动无响应；在未改动的上游代码上同样如此，非本 fork 引入）。凡「拖 gizmo」类验收项须人工执行或改用面板滑杆路径验证状态链路。
+>
+> 渲染与调试坑（T03 实测）：① drei `<Html>` 在本项目 R3F v9 多 Canvas 环境下不产出 DOM（无报错）——canvas 内叠 UI 用自管 DOM（组件 effect 建/删 + useFrame 投影定位），不用 drei Html；② IAB 软重载（reload）会沿用旧 ES 模块缓存，**代码变更后的浏览器验证必须开全新标签页**；③ dev server 长跑后个别文件可能不触发 HMR（重启 `npm run dev` 解决）。
 
 - [ ] `npm run build` 通过
 - [ ] 打开无 diagram 字段的老工程不报错；带 diagram 的工程可保存/重开
