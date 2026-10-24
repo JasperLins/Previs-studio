@@ -118,3 +118,25 @@ symbols/geometry.js（足迹/薄墙/姿势映射/铰链弧，13 测）+ SymbolLa
 ### Status
 
 [OK] **Completed**
+
+
+## Session 6: T05 标注层补全
+
+**Date**: 2026-10-24
+**Task**: T05 标注层补全
+**Branch**: `class`
+
+### Summary
+
+annotations/data.js（侧别/越线/幽灵/解析/路径，21 测）+ AnnotationLayer（轴线/视线/路径节点/幽灵复用重构的 CameraSymbol）+ 图层面板（七开关/轴线人物/视线目标/锁定画布）+ CameraGizmo warned 橙板；子代理 quota 中断后主会话补齐接缝并修面板 pointer-events；越轴三点实测精确、幽灵/图层开关双向过；路径拖帧留人工。105/105、build 过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b2e735b` | (see git log) |
+| `0c6df50` | (see git log) |
+
+### Status
+
+[OK] **Completed**
