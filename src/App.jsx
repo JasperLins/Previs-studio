@@ -13,6 +13,8 @@ import { normalizeDiagram, patchDiagram } from './diagram/diagramData.js'
 import { computeTopViewBounds, isTopView, worldPerPixel } from './diagram/topView.js'
 import { TopViewOverlay } from './diagram/TopViewOverlay.jsx'
 import { camLetter, nearestInFramePerson } from './diagram/gizmos/frustum.js'
+import { objectToView, shotToView } from './diagram/stateAdapter.js'
+import { axisSide, isCrossing, pathPoints, pickGhostShots, resolveAxisPair, resolveGazes } from './diagram/annotations/data.js'
 
 const CAMERA_ID = '__shot_camera__'
 const PROJECT_STORAGE_KEY = 'monoform-project'
@@ -1333,13 +1335,42 @@ export default function App() {
   const topViewCenter = topViewFit?.center || [0, 0]
   const topViewRadius = topViewFit?.radius || 6
   // T03 机位 Gizmo 传参（逻辑在 src/diagram/）：字母 shotMeta 手填优先、否则按镜序；对象名取最近入画人物
+  // ===== T05 标注层数据（中性视图形状，上游字段名止步于此接缝）=====
+  const [canvasLocked, setCanvasLocked] = useState(false)
+  const objViews = useMemo(() => animatedObjects.map(objectToView), [animatedObjects])
+  const shotViews = useMemo(() => shots.map(shotToView), [shots])
+  const annotationData = useMemo(() => ({
+    axis: resolveAxisPair(diagram.axisPair, objViews),
+    gazes: resolveGazes(diagram.gazeTargets, objViews),
+    cameraTrack: pathPoints((keyframes || []).map(key => ({ frame: key.frame, x: key.position?.[0], z: key.position?.[2] }))),
+    objectTracks: Object.entries(characterKeyframes || {}).map(([id, track]) => ({
+      id,
+      name: objects.find(object => object.id === id)?.name || id,
+      points: pathPoints((Array.isArray(track) ? track : []).map(key => ({ frame: key.frame, x: key.position?.[0], z: key.position?.[2] }))),
+    })),
+    ghosts: pickGhostShots(shotViews, activeShotId),
+    layers: diagram.layers,
+  }), [activeShotId, characterKeyframes, diagram, keyframes, objects, objViews, shotViews])
+  // 越轴判定：基准侧 = 该轴线对首个有效侧别；当前侧与基准不同且非压线 → 越轴（拖回基准侧自动消除）
+  const axisBaselineRef = useRef({ key: null, side: '0' })
+  const axisWarned = useMemo(() => {
+    const axis = annotationData.axis
+    if (!axis) return false
+    const key = `${axis.a.id}|${axis.b.id}`
+    if (axisBaselineRef.current.key !== key) axisBaselineRef.current = { key, side: '0' }
+    const side = axisSide(axis.a, axis.b, { x: displayCamera.position?.[0], z: displayCamera.position?.[2] })
+    if (side !== '+1' && side !== '-1') return false
+    if (axisBaselineRef.current.side === '0') axisBaselineRef.current.side = side
+    return side !== axisBaselineRef.current.side
+  }, [annotationData.axis, displayCamera.position])
+
   const cameraGizmo = useMemo(() => {
     const meta = diagram.shotMeta?.[activeShotId]
     const manualLetter = typeof meta?.camLetter === 'string' && meta.camLetter ? meta.camLetter : null
     const shotIndex = Math.max(0, shots.findIndex(shot => shot.id === activeShotId))
     const subject = nearestInFramePerson(displayCamera, animatedObjects)
-    return { on: diagram.layers?.frustum !== false, letter: manualLetter || camLetter(shotIndex), subjectName: subject?.name || '' }
-  }, [activeShotId, animatedObjects, diagram, displayCamera, shots])
+    return { on: diagram.layers?.frustum !== false, letter: manualLetter || camLetter(shotIndex), subjectName: subject?.name || '', warned: axisWarned }
+  }, [activeShotId, animatedObjects, axisWarned, diagram, displayCamera, shots])
   const currentProject = useMemo(() => projectData({
     settings,
     objects,
@@ -2228,7 +2259,8 @@ export default function App() {
           <ViewportAspectPicker value={camera.aspectRatio} onChange={aspectRatio => setCamera(current => ({ ...current, aspectRatio }))} />
           <ReferenceOverlay reference={reference} onChange={setReference} onToast={setToast} cameraMode={cameraView} cameraAspect={previewAspect}>
             <div className={`viewport-canvas-layer ${topViewActive ? 'dg-topview' : ''}`}>
-              <MainViewport key={cameraView ? 'shot-view' : topView ? 'top-view' : 'scene-view'} cameraView={cameraView} cameraAspect={previewAspect} editorCameraData={editorView} onEditorCameraChange={captureEditorView} objects={animatedObjects} animationTime={currentFrame / fps} selectedId={selectedId} activeJoint={selectedJoint} onSelect={setSelectedId} onJointSelect={(objectId, jointId) => { setSelectedId(objectId); setSelectedJoint(jointId) }} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} planeLock={topViewActive} onUpdateObject={updateObjectById} cameraData={displayCamera} onUpdateCamera={patch => setCamera(current => ({ ...current, ...patch }))} lighting={lighting} showGrid={showGrid} focusRequest={viewFocusRequest} referenceVisible={Boolean(reference.image && reference.visible)} topView={topView} topViewCenter={topViewCenter} topViewRadius={topViewRadius} topViewGrid={diagram.layers.grid} topViewHalfGrid={topViewHalfGrid} onTopViewportReport={handleTopViewReport} cameraGizmo={cameraGizmo} symbolLayer={{ labels: diagram.layers.labels }} />
+              <MainViewport key={cameraView ? 'shot-view' : topView ? 'top-view' : 'scene-view'} cameraView={cameraView} cameraAspect={previewAspect} editorCameraData={editorView} onEditorCameraChange={captureEditorView} objects={animatedObjects} animationTime={currentFrame / fps} selectedId={selectedId} activeJoint={selectedJoint} onSelect={setSelectedId} onJointSelect={(objectId, jointId) => { setSelectedId(objectId); setSelectedJoint(jointId) }} transformMode={canvasLocked ? 'select' : transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} planeLock={topViewActive} onUpdateObject={updateObjectById} cameraData={displayCamera} onUpdateCamera={patch => setCamera(current => ({ ...current, ...patch }))} lighting={lighting} showGrid={showGrid} focusRequest={viewFocusRequest} referenceVisible={Boolean(reference.image && reference.visible)} topView={topView} topViewCenter={topViewCenter} topViewRadius={topViewRadius} topViewGrid={diagram.layers.grid} topViewHalfGrid={topViewHalfGrid} onTopViewportReport={handleTopViewReport} cameraGizmo={cameraGizmo} symbolLayer={{ labels: diagram.layers.labels }} annotations={annotationData} />
+              {axisWarned && <div className="dg-axis-warning" role="alert">机位越过轴线 · 请回到基准侧拍摄（轴线两端人物可在图层面板更换）</div>}
               {topViewActive && (
                 <TopViewOverlay
                   worldPerPx={worldPerPixel(topViewZoom)}
@@ -2237,6 +2269,11 @@ export default function App() {
                   onToggleGrid={() => setDiagram(prev => patchDiagram(prev, { layers: { grid: !(prev?.layers?.grid ?? true) } }))}
                   halfGridOn={topViewHalfGrid}
                   onToggleHalfGrid={() => setTopViewHalfGrid(value => !value)}
+                  diagram={diagram}
+                  objects={objViews}
+                  onPatchDiagram={patch => setDiagram(prev => patchDiagram(prev, patch))}
+                  canvasLocked={canvasLocked}
+                  onToggleLock={() => setCanvasLocked(value => !value)}
                 />
               )}
             </div>
