@@ -3,10 +3,12 @@
 // 依赖注入：适配器不自持状态，全部读写经 deps 走 App.jsx 既有状态更新与历史栈。
 
 import { patchDiagram as mergeDiagramPatch } from './diagramData.js'
+import { headingYawRad } from './gizmos/frustum.js'
 
 const isFiniteNumber = value => Number.isFinite(value)
 
-// 上游对象 → diagram 视图模型。position[1] 为高度（只读），rotation[1] 为水平角 yaw。
+// 上游对象 → diagram 视图模型。position[1] 为高度（只读）；yaw 为全量欧拉反推的水平朝向
+// （headingYawRad——rotation[1] 在 three 分解翻支后会镜像，见 frustum.js）。
 export function objectToView(object) {
   if (!object) return null
   const position = Array.isArray(object.position) ? object.position : [0, 0, 0]
@@ -19,7 +21,7 @@ export function objectToView(object) {
     x: position[0],
     y: position[1],
     z: position[2],
-    yaw: rotation[1],
+    yaw: headingYawRad(rotation),
     scale: Array.isArray(object.scale) ? [...object.scale] : [1, 1, 1],
     pose: object.type === 'person' ? object.pose ?? null : null,
     locked: Boolean(object.locked),
@@ -35,7 +37,7 @@ export function cameraToView(camera) {
     x: position[0],
     y: position[1],
     z: position[2],
-    yaw: rotation[1],
+    yaw: headingYawRad(rotation),
     focalLength: camera.focalLength,
     aspectRatio: camera.aspectRatio,
   }

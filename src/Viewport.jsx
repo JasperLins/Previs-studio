@@ -1129,7 +1129,7 @@ function CameraModel({ data, selected, selectedId, transformMode, transformSpace
         <cylinderGeometry args={[0.18, 0.23, 0.32, 20]} />
         <meshStandardMaterial color="#232322" roughness={0.4} metalness={0.5} />
       </mesh>
-      <mesh position={[0, 0, -0.82]} rotation={[Math.PI / 2, 0, Math.PI / 4]} raycast={() => null}>
+      <mesh position={[0, 0, -0.82]} rotation={[Math.PI / 2, Math.PI / 4, 0]} raycast={() => null}>
         <coneGeometry args={[0.36, 0.9, 4, 1, true]} />
         <meshBasicMaterial color={selected ? '#eabf62' : '#8e8a80'} wireframe transparent opacity={selected ? 0.72 : 0.28} depthWrite={false} />
       </mesh>
@@ -1268,7 +1268,7 @@ function EditorScene({ objects, selectedId, activeJoint, onSelect, onJointSelect
       {topView && <TopViewGrid radius={topViewRadius} showGrid={topViewGrid} showHalfGrid={topViewHalfGrid} />}
       {objects.map(object => <SceneObject key={object.id} data={object} selected={selectedId === object.id} selectedId={selectedId} activeJoint={activeJoint} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} planeLock={planeLock} onSelect={onSelect} onJointSelect={onJointSelect} onUpdate={onUpdateObject} animationTime={animationTime} />)}
       {!cameraView && <CameraModel data={cameraData} selected={selectedId === CAMERA_ID} selectedId={selectedId} transformMode={transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} planeLock={planeLock} onSelect={onSelect} onUpdate={onUpdateCamera} />}
-      {!cameraView && cameraGizmo?.on && <CameraGizmo cameraData={cameraData} objects={objects} letter={cameraGizmo.letter} subjectName={cameraGizmo.subjectName} warned={Boolean(cameraGizmo.warned)} shotSize={cameraGizmo?.shotSize || ''} />}
+      {!cameraView && cameraGizmo?.on && <CameraGizmo cameraData={cameraData} objects={objects} warned={Boolean(cameraGizmo.warned)} />}
       {!cameraView && <AnnotationLayer annotations={annotations} />}
       {topView && <SymbolLayer objects={objects} selectedId={selectedId} onSelect={onSelect} labelsOn={symbolLayer?.labels !== false} />}
       <ContactShadows position={[0, 0.01, 0]} opacity={0.42} scale={18} blur={2.4} far={9} />

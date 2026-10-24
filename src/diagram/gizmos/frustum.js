@@ -37,18 +37,38 @@ function planeGeometry(camera, position) {
   return { dx, dz, distance: Math.hypot(dx, dz) }
 }
 
-// 是否入画（v1 简化口径）：只用水平角判定——机位水平前向 = yaw（rotation[1]）旋转后的
-// -Z 方向的水平投影；目标与前向夹角 ≤ hfov/2 且水平距离 > 0.1。忽略俯仰，vfovDeg 为
+// 水平前向（单位向量）：全量欧拉 [pitch, yaw, roll]（three 'XYZ'）作用到 -Z 后的水平投影。
+// roll 不改变 -Z 轴向量；Rx(pitch)·Ry(yaw)·(0,0,-1) 的水平分量为 (-sin yaw, -cos yaw·cos pitch)。
+// three 的四元数→欧拉分解在 |yaw|>90° 时会翻支（y 镜像、x/z 各 ±180° 表示同一旋转，
+// TransformControls 旋转即走该路径），只取 rotation[1] 会随翻支镜像——所有水平朝向消费
+// 一律走本函数（审查门：禁止在别处另写 -sin/-cos(rotation[1])）。俯仰 ±90° 水平前向退化 → 兜底 -Z。
+export function horizontalForward(rotation) {
+  const r = Array.isArray(rotation) ? rotation : []
+  const pitch = Number.isFinite(r[0]) ? r[0] : 0
+  const yaw = Number.isFinite(r[1]) ? r[1] : 0
+  const x = -Math.sin(yaw)
+  const z = -Math.cos(yaw) * Math.cos(pitch)
+  const len = Math.hypot(x, z)
+  if (len < 1e-9) return { x: 0, z: -1 }
+  return { x: x / len, z: z / len }
+}
+
+// 水平朝向角（弧度）：符号件（CameraSymbol 系）的 yaw 入参口径——(−sin θ, −cos θ) 对准水平前向。
+// 对任意欧拉支（含翻转支）都返回物理真实朝向；rotation 非法 → 0。
+export function headingYawRad(rotation) {
+  const forward = horizontalForward(rotation)
+  return Math.atan2(-forward.x, -forward.z)
+}
+
+// 是否入画（v1 简化口径）：只用水平角判定——机位水平前向 = 全量旋转经 horizontalForward
+// 的水平投影；目标与前向夹角 ≤ hfov/2 且水平距离 > 0.1。忽略俯仰，vfovDeg 为
 // v2 预留参数（当前不参与判定）。机位/目标缺 position 或分量非法 → false。
 export function isInFrame(camera, position, hfovDeg, vfovDeg) {
   const plane = planeGeometry(camera, position)
   if (!plane) return false
   if (plane.distance <= 0.1) return false
-  const rotation = Array.isArray(camera?.rotation) ? camera.rotation : []
-  const yaw = Number.isFinite(rotation[1]) ? rotation[1] : 0
-  const forwardX = -Math.sin(yaw)
-  const forwardZ = -Math.cos(yaw)
-  const cosAngle = (plane.dx * forwardX + plane.dz * forwardZ) / plane.distance
+  const forward = horizontalForward(camera?.rotation)
+  const cosAngle = (plane.dx * forward.x + plane.dz * forward.z) / plane.distance
   const angleDeg = toDeg(Math.acos(Math.min(1, Math.max(-1, cosAngle))))
   const fov = Number(hfovDeg)
   const halfFov = (Number.isFinite(fov) && fov > 0 ? fov : 90) / 2

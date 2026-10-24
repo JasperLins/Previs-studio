@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowDownToLine, Axis3D, Box, BoxSelect, Camera, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleDot, Copy, Download,
+  ArrowDownToLine, ArrowLeft, Axis3D, Box, BoxSelect, Camera, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleDot, Copy, Download,
   FileImage, FileVideo2, Focus, FolderOpen, Grid3X3, Import, Link2, Lock, MousePointer2, Move3D, Pause, Play, Plus,
   Magnet, Map as MapIcon, Maximize2, Minimize2, Minus, Redo2, RotateCcw, RotateCw, Save, Settings2, SkipBack, SkipForward, SlidersHorizontal, Sparkles, Sun,
   ScanLine, Trash2, Undo2, Unlink2, UserRound, Video, ZoomIn,
@@ -1318,13 +1318,12 @@ export default function App() {
   const [lightingPanelOpen, setLightingPanelOpen] = useState(false)
   const [cameraAnglePanelOpen, setCameraAnglePanelOpen] = useState(false)
   const [viewOptionsCollapsed, setViewOptionsCollapsed] = useState(false)
-  // 监看窗口默认收起（用户口径：蓝色预览区域无需常驻展示）；上次选择记忆在 localStorage，
-  // 收起期间镜头缩略图沿用旧图（thumbnailFromMonitor 拿不到画布时优雅回退）。
+  // 监看窗口默认展开；用户手动收起/放大后会记忆在 localStorage（跨会话保持）。
   const [monitorMode, setMonitorMode] = useState(() => {
     try {
       const saved = localStorage.getItem(MONITOR_MODE_KEY)
-      return saved === 'normal' || saved === 'expanded' ? saved : 'minimized'
-    } catch { return 'minimized' }
+      return saved === 'minimized' || saved === 'expanded' ? saved : 'normal'
+    } catch { return 'normal' }
   })
   const [editorView, setEditorView] = useState({ position: [8.5, 6.4, 9.5], target: [0, 1, 0] })
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -1404,6 +1403,7 @@ export default function App() {
   }), [activeShotId, characterKeyframes, diagram, keyframes, objects, objViews, shotViews])
   // 越轴判定：基准侧 = 该轴线对首个有效侧别；当前侧与基准不同且非压线 → 越轴（拖回基准侧自动消除）
   const axisBaselineRef = useRef({ key: null, side: '0' })
+  const [axisBaselineTick, setAxisBaselineTick] = useState(0)
   const axisWarned = useMemo(() => {
     const axis = annotationData.axis
     if (!axis) return false
@@ -1413,7 +1413,17 @@ export default function App() {
     if (side !== '+1' && side !== '-1') return false
     if (axisBaselineRef.current.side === '0') axisBaselineRef.current.side = side
     return side !== axisBaselineRef.current.side
-  }, [annotationData.axis, displayCamera.position])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- axisBaselineTick 仅在「允许越轴」重设基准侧后变化，用于强制重算
+  }, [annotationData.axis, axisBaselineTick, displayCamera.position])
+  // 允许越轴（有意越轴时的出口）：基准侧改为当前机位所在侧，警示随之消除；之后回到原侧才再次提示
+  const allowAxisCrossing = () => {
+    const axis = annotationData.axis
+    if (!axis) return
+    const side = axisSide(axis.a, axis.b, { x: displayCamera.position?.[0], z: displayCamera.position?.[2] })
+    if (side === '+1' || side === '-1') axisBaselineRef.current.side = side
+    setAxisBaselineTick(value => value + 1)
+    setToast('已允许越轴 · 基准侧更新为当前机位一侧')
+  }
 
   // ===== T06 提示词编译（机位词面板数据；景别与标签牌同源）=====
   const promptObjects = useMemo(() => animatedObjects.map(object => ({
@@ -1450,6 +1460,8 @@ export default function App() {
     })
   }, [activeShotId, characterKeyframes, diagram, displayCamera, fps, keyframes, promptObjects, settings.durationSeconds, shots])
   const [rightTab, setRightTab] = useState('inspector')
+  // 选中任意对象（含主摄像机）时右侧面板自动回到属性栏；取消选中不打扰当前页签
+  useEffect(() => { if (selectedId) setRightTab('inspector') }, [selectedId])
   // ===== S8 项目库（src/projects/）：活动指针 + 面板状态；refs 供 900ms 防抖闭包读取实时值 =====
   const [activeProjectId, setActiveProjectId] = useState(() => { try { return localStorage.getItem(ACTIVE_PROJECT_KEY) || null } catch { return null } })
   const [libraryEntries, setLibraryEntries] = useState([])
@@ -2587,11 +2599,18 @@ export default function App() {
           {lightingPanelOpen && <LightingPanel lighting={lighting} onChange={setLighting} onClose={() => setLightingPanelOpen(false)} />}
           {cameraView && cameraAnglePanelOpen && <CameraAnglePanel camera={camera} onChange={patch => setCamera(current => ({ ...current, ...patch }))} onClose={() => setCameraAnglePanelOpen(false)} onLevel={levelCameraHorizon} />}
           <div className="viewport-label"><strong>{cameraView ? '摄像机视角' : '编辑视角'}</strong><span>{cameraView ? `${aspectLabel(displayCamera.aspectRatio)} · 正在查看场景中的主摄像机` : '固定观察相机 · 可查看并调整场景中的主摄像机'}</span></div>
+          {cameraView && <button className="dg-pov-exit" onClick={openEditorView} title="退出摄像机视角，返回编辑视图"><ArrowLeft size={13} /> 返回编辑视角</button>}
           <ViewportAspectPicker value={camera.aspectRatio} onChange={aspectRatio => setCamera(current => ({ ...current, aspectRatio }))} />
           <ReferenceOverlay reference={reference} onChange={setReference} onToast={setToast} cameraMode={cameraView} cameraAspect={previewAspect}>
             <div className={`viewport-canvas-layer ${topViewActive ? 'dg-topview' : ''}`}>
               <MainViewport key={cameraView ? 'shot-view' : topView ? 'top-view' : 'scene-view'} cameraView={cameraView} cameraAspect={previewAspect} editorCameraData={editorView} onEditorCameraChange={captureEditorView} objects={animatedObjects} animationTime={currentFrame / fps} selectedId={selectedId} activeJoint={selectedJoint} onSelect={setSelectedId} onJointSelect={(objectId, jointId) => { setSelectedId(objectId); setSelectedJoint(jointId) }} transformMode={canvasLocked ? 'select' : transformMode} transformSpace={transformSpace} snapEnabled={snapEnabled} groundRequest={groundRequest} planeLock={topViewActive} onUpdateObject={updateObjectById} cameraData={displayCamera} onUpdateCamera={patch => setCamera(current => ({ ...current, ...patch }))} lighting={lighting} showGrid={showGrid} focusRequest={viewFocusRequest} referenceVisible={Boolean(reference.image && reference.visible)} topView={topView} topViewCenter={topViewCenter} topViewRadius={topViewRadius} topViewGrid={diagram.layers.grid} topViewHalfGrid={topViewHalfGrid} onTopViewportReport={handleTopViewReport} cameraGizmo={cameraGizmo} symbolLayer={{ labels: diagram.layers.labels }} annotations={annotationData} />
-              {axisWarned && <div className="dg-axis-warning" role="alert">机位越过轴线 · 请回到基准侧拍摄（轴线两端人物可在图层面板更换）</div>}
+              {axisWarned && (
+                <div className="dg-axis-warning" role="alert">
+                  <span>机位越过轴线 · 请回到基准侧拍摄（轴线两端人物可在图层面板更换）</span>
+                  <button type="button" onClick={allowAxisCrossing} title="有意越轴时使用：以当前机位一侧为新基准，消除警示">允许越轴</button>
+                  {cameraView && <button type="button" onClick={openEditorView} title="退出摄像机视角，返回编辑视图">返回编辑视角</button>}
+                </div>
+              )}
               {topViewActive && (
                 <TopViewOverlay
                   worldPerPx={worldPerPixel(topViewZoom)}

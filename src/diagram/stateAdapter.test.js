@@ -66,7 +66,8 @@ test('objectToView：scale 是拷贝，改视图不改上游对象', () => {
 
 test('cameraToView：位置/水平角/焦距/画幅映射正确', () => {
   const view = cameraToView(cameraStub)
-  assert.deepEqual(view, { x: 7.4, y: 4.6, z: 8.2, yaw: 0.9, focalLength: 42, aspectRatio: '16:9' })
+  // yaw 为全量欧拉反推的水平朝向（headingYawRad）：夹具带 0.1rad 俯仰 → 0.9 投影为 0.9024…
+  assert.deepEqual(view, { x: 7.4, y: 4.6, z: 8.2, yaw: 0.9024372909980054, focalLength: 42, aspectRatio: '16:9' })
 })
 
 test('shotToView：id/name/objects/camera 齐全，objects 已是视图模型', () => {

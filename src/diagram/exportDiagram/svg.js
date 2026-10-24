@@ -3,7 +3,7 @@
 // 世界→画布：北（-Z）朝上；SVG y 向下 → svgY = oy + (maxZ - wz) * s。
 
 import { footprintOf, isThinWall, poseVariant, doorHingeArc } from '../symbols/geometry.js'
-import { horizontalFovDeg, coneLengthMeters } from '../gizmos/frustum.js'
+import { coneLengthMeters, headingYawRad, horizontalFovDeg } from '../gizmos/frustum.js'
 import { pickScaleBar } from '../topView.js'
 
 const W = 1600
@@ -85,7 +85,8 @@ export function buildShotDiagramSvg(input) {
   // ---- 对象符号 ----
   for (const o of objects) {
     const p = svgPos(o)
-    const yaw = Array.isArray(o.rotation) ? (Number(o.rotation[1]) || 0) : (Number(o.yaw) || 0)
+    // rotation 走全量朝向（headingYawRad，防翻支镜像）；视图模型则带已算好的 yaw
+    const yaw = Array.isArray(o.rotation) ? headingYawRad(o.rotation) : (Number(o.yaw) || 0)
     const cx = X(p.x), cy = Y(p.z)
     if (o.type === 'person') {
       const variant = poseVariant(o.pose)
@@ -187,7 +188,7 @@ export function buildShotDiagramSvg(input) {
     const color = warned ? ORANGE : GREEN
     const hfov = horizontalFovDeg(camera.focalLength)
     const cone = coneLengthMeters(camera, objects, hfov, null)
-    const yaw = Array.isArray(camera.rotation) ? (Number(camera.rotation[1]) || 0) : 0
+    const yaw = headingYawRad(camera.rotation) // 全量朝向：防 |yaw|>90° 欧拉翻支后扇形镜像
     const fx = -Math.sin(yaw), fz = -Math.cos(yaw)
     const half = (hfov * Math.PI / 180) / 2
     const e1 = [cam.x + (-Math.sin(yaw - half)) * cone, cam.z + (-Math.cos(yaw - half)) * cone]

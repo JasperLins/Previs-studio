@@ -1,7 +1,7 @@
 // node --test "src/diagram/**/*.test.js" 直接可跑（node 内置 runner，零依赖）
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { camLetter, coneLengthMeters, horizontalFovDeg, isInFrame, nearestInFramePerson, verticalFovDeg } from './frustum.js'
+import { camLetter, coneLengthMeters, headingYawRad, horizontalForward, horizontalFovDeg, isInFrame, nearestInFramePerson, verticalFovDeg } from './frustum.js'
 
 // 外部参照值：全画幅水平 FoV 公众口径（35mm→54.4°、85mm→23.9° 等），非本模块公式回抄。
 // （任务书参照表 35→54.410 / 85→23.902 与公式 2·arctan(18/f) 差 >0.01°，按 product-spec §2 公式为准。）
@@ -84,6 +84,62 @@ test('isInFrame：零距离与近机位（≤0.1m）不算入画', () => {
 
 test('isInFrame：v1 只做水平角判定（vfovDeg 极窄不影响正前目标）', () => {
   assert.equal(isInFrame(cameraNorth, [0, 0, -5], hfov35, 1), true)
+})
+
+// —— 欧拉翻支（回归红线）：three 四元数→欧拉分解在 |yaw|>90° 时翻支——
+// 物理朝向 yaw=200° 会被存成 (x=-180°, y=-20°, z=-180°)（同一旋转）。
+// 直接取 rotation[1] 会把朝向镜像成 -20°；水平朝向消费必须走 horizontalForward/headingYawRad。
+const deg = Math.PI / 180
+const yaw200 = [0, 200 * deg, 0]
+const yaw200Flipped = [180 * deg, -20 * deg, 180 * deg] // 与 yaw200 同一旋转（翻支表示）
+
+test('headingYawRad：翻支前后同一物理朝向返回同一水平角（yaw=200°）', () => {
+  const direct = headingYawRad(yaw200)
+  const flipped = headingYawRad(yaw200Flipped)
+  assert.ok(Math.abs(direct - flipped) < 1e-9, `直接 ${direct / deg}° vs 翻支 ${flipped / deg}°`)
+  // atan2 值域 (-π,π]：200° 表达为 -160°，按方向（sin/cos）等价判定
+  assert.ok(Math.abs(Math.sin(direct) - Math.sin(200 * deg)) < 1e-9, `sin 方向应为 200°，实际 ${direct / deg}°`)
+  assert.ok(Math.abs(Math.cos(direct) - Math.cos(200 * deg)) < 1e-9, `cos 方向应为 200°，实际 ${direct / deg}°`)
+})
+
+test('headingYawRad：带俯仰/翻滚的组合翻支（真实分解值）等价', () => {
+  // (pitch-13°, yaw120°, roll8°) 经 three 分解 → (167°, 60°, -172°)：物理朝向不变
+  const original = [-13 * deg, 120 * deg, 8 * deg]
+  const flipped = [167 * deg, 60 * deg, -172 * deg]
+  const a = headingYawRad(original)
+  const b = headingYawRad(flipped)
+  assert.ok(Math.abs(a - b) < 1e-6, `${a / deg}° vs ${b / deg}°`)
+})
+
+test('horizontalForward：单位向量；非法 rotation 兜底朝北；俯仰 ±90° 退化兜底', () => {
+  const f = horizontalForward([0, 0, 0])
+  assert.ok(f.x === 0 && f.z === -1, `朝北应为 (0,-1)，实际 (${f.x},${f.z})`) // === 口径：-0 视同 0
+  assert.ok(Math.hypot(f.x, f.z) > 1 - 1e-12, '单位长度')
+  assert.ok(horizontalForward(null).z === -1)
+  assert.ok(horizontalForward([NaN, NaN, NaN]).z === -1)
+  // 俯仰 -90°（正上方）+ yaw 0：水平前向退化 → 兜底 (0,-1) 不产出 NaN
+  const degenerate = horizontalForward([-Math.PI / 2, 0, 0])
+  assert.ok(Number.isFinite(degenerate.x) && Number.isFinite(degenerate.z))
+})
+
+test('isInFrame：翻支存储下前向仍指真实朝向（200° 镜头正前目标入画、机后出画）', () => {
+  // 200° 朝向的单位前向 ≈ (0.342, 0.940)：目标沿前向 10m
+  const ahead = [3.42, 0, 9.4]
+  const behind = [-3.42, 0, -9.4]
+  for (const rotation of [yaw200, yaw200Flipped]) {
+    const camera = { position: [0, 1.5, 0], rotation, focalLength: 35 }
+    assert.equal(isInFrame(camera, ahead, hfov35, 90), true, `rotation=${JSON.stringify(rotation)} 前向目标应入画`)
+    assert.equal(isInFrame(camera, behind, hfov35, 90), false, `rotation=${JSON.stringify(rotation)} 机后目标应出画`)
+  }
+})
+
+test('coneLengthMeters：翻支存储下锥长仍按真实朝向取最远入画对象', () => {
+  const fwd = horizontalForward(yaw200) // 沿真实前向精确 10m（hypot 恰为 10，锥长 11）
+  const objects = [{ position: [fwd.x * 10, 0, fwd.z * 10] }]
+  for (const rotation of [yaw200, yaw200Flipped]) {
+    const camera = { position: [0, 1.5, 0], rotation, focalLength: 18 }
+    assert.ok(Math.abs(coneLengthMeters(camera, objects, 90, 90) - 11) < 1e-9, `rotation=${JSON.stringify(rotation)}`)
+  }
 })
 
 test('isInFrame：机位/目标缺 position 或分量非法 → false；hfov 非法按 90 兜底', () => {
