@@ -52,3 +52,25 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 3: T02 顶视正交编辑视图与地面约束编辑
+
+**Date**: 2026-10-24
+**Task**: T02 顶视正交编辑视图与地面约束编辑
+**Branch**: `class`
+
+### Summary
+
+顶视正交编辑视图落地：topView.js 纯函数（19 测）+ TopViewControls/Grid/Overlay 组件；接缝 S1/S2/S3 登记 PATCHES；check 修复 4 项（含 3D 视图 Y 轴被误夹紧的严重回归）；51/51 测试、build 过；浏览器验收：进出数据不变、切镜保持、+1m 保 Y=0、三步撤销精确回位、比例尺 2m=139px 吻合；gizmo 拖拽自动化不可达经 A/B 判别为输入限制，用户实机确认通过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `06aa9ed` | (see git log) |
+| `e9a8f89` | (see git log) |
+
+### Status
+
+[OK] **Completed**
