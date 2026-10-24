@@ -21,6 +21,7 @@ import { buildShotDiagramSvg } from './diagram/exportDiagram/svg.js'
 import { svgToPngBlob } from './diagram/exportDiagram/raster.js'
 import { SliderNumberInput } from './SliderNumberInput.jsx'
 import { ProjectsPanel } from './projects/ProjectsPanel.jsx'
+import { BUILTIN_PRESETS } from './projects/builtinPresets.js'
 import { createProjectId, deleteEntry, getEntry, listEntries, makeEntryFromProject, openStore, putEntry, uniqueProjectName } from './projects/projectStore.js'
 import ShotPresetDialog from './ShotPresetDialog.jsx'
 import { SHOT_CAMERA_PRESETS, presetCameraForObject } from './shotPresets.js'
@@ -2379,6 +2380,21 @@ export default function App() {
     reader.readAsText(file)
     event.target.value = ''
   }
+  // 「课堂预设」一键载入（T11 · S8 延伸）：与 importProjectFile 成功分支同一管线，
+  // 数据源为随包分发的内置 JSON（src/projects/builtinPresets.js），跨浏览器可用
+  const loadBuiltinPreset = preset => {
+    try {
+      const loaded = normalizeProjectData(preset.data)
+      if (!loaded) throw new Error('invalid preset')
+      flushCurrentProject().catch(() => {})
+      const id = createProjectId()
+      applyProjectSnapshot(loaded)
+      adoptProject(id)
+      // 与快照 setState 同批提交：注册 effect 在 latestProjectRef 更新后落库（同 importProjectFile）
+      setPendingRegistrationId(id)
+      setToast(`预设已载入 · ${loaded.settings.name}`)
+    } catch { setToast('预设载入失败') }
+  }
   const resetProject = () => {
     const resetObjects = cloneProjectValue(initialObjects)
     const resetCamera = cloneProjectValue(initialCamera)
@@ -2627,6 +2643,8 @@ export default function App() {
               activeProjectId={activeProjectId}
               busy={libraryBusy}
               unavailable={storeUnavailable}
+              builtinPresets={BUILTIN_PRESETS}
+              onLoadBuiltinPreset={loadBuiltinPreset}
               onOpen={openProject}
               onNew={startNewProject}
               onDuplicate={duplicateProject}
