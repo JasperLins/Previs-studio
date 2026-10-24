@@ -1,0 +1,35 @@
+{
+  "version": 16,
+  "settings": { "name": "预设 · 双人对话通用内景", "fps": 24, "durationSeconds": 15, "loopPlayback": false },
+  "activeShotId": "shot-01",
+  "objects": [
+    { "id": "floor", "name": "房间 · 地面", "type": "plane", "position": [0, 0.02, 0], "rotation": [0, 0, 0], "scale": [8, 1, 7], "color": "#d6d1c6" },
+    { "id": "wall-back", "name": "房间 · 后墙", "type": "box", "position": [0, 1.6, -3.5], "rotation": [0, 0, 0], "scale": [8, 3.2, 0.24], "color": "#ddd8ce" },
+    { "id": "wall-left", "name": "房间 · 左墙", "type": "box", "position": [-4, 1.6, 0], "rotation": [0, 0, 0], "scale": [0.24, 3.2, 7], "color": "#ddd8ce" },
+    { "id": "wall-right", "name": "房间 · 右墙", "type": "box", "position": [4, 1.6, 0], "rotation": [0, 0, 0], "scale": [0.24, 3.2, 7], "color": "#ddd8ce" },
+    { "id": "back-door", "name": "门", "type": "door", "position": [-2.2, 1.1, -3.42], "rotation": [0, 0, 0], "scale": [1.2, 2.2, 0.25], "color": "#c7c2b7" },
+    { "id": "side-window", "name": "窗", "type": "window", "position": [3.92, 1.8, -0.6], "rotation": [0, 1.5708, 0], "scale": [1.5, 1.3, 0.22], "color": "#c7c2b7" },
+    { "id": "cabinet-base", "name": "背景柜 · 底柜", "type": "box", "position": [1.9, 0.275, -3.2], "rotation": [0, 0, 0], "scale": [2.0, 0.55, 0.42], "color": "#c6c0b3" },
+    { "id": "cabinet-side-l", "name": "背景柜 · 左立板", "type": "box", "position": [0.95, 1.35, -3.2], "rotation": [0, 0, 0], "scale": [0.07, 1.6, 0.4], "color": "#beb8ab" },
+    { "id": "cabinet-side-r", "name": "背景柜 · 右立板", "type": "box", "position": [2.85, 1.35, -3.2], "rotation": [0, 0, 0], "scale": [0.07, 1.6, 0.4], "color": "#beb8ab" },
+    { "id": "cabinet-board-1", "name": "背景柜 · 层板 1", "type": "box", "position": [1.9, 1.05, -3.2], "rotation": [0, 0, 0], "scale": [1.86, 0.05, 0.38], "color": "#beb8ab" },
+    { "id": "cabinet-board-2", "name": "背景柜 · 层板 2", "type": "box", "position": [1.9, 1.75, -3.2], "rotation": [0, 0, 0], "scale": [1.86, 0.05, 0.38], "color": "#beb8ab" },
+    { "id": "cabinet-top", "name": "背景柜 · 顶板", "type": "box", "position": [1.9, 2.18, -3.2], "rotation": [0, 0, 0], "scale": [2.0, 0.06, 0.44], "color": "#beb8ab" },
+    { "id": "table-main", "name": "桌子", "type": "table", "position": [0, 0.5, 0], "rotation": [0, 0, 0], "scale": [1.7, 1, 1.1], "color": "#cfc9bc" },
+    { "id": "chair-a", "name": "椅子 · A", "type": "chair", "position": [-2.25, 0.5, 0], "rotation": [0, -1.5708, 0], "scale": [0.8, 1, 0.8], "color": "#c7c2b7" },
+    { "id": "chair-b", "name": "椅子 · B", "type": "chair", "position": [2.25, 0.5, 0], "rotation": [0, 1.5708, 0], "scale": [0.8, 1, 0.8], "color": "#c7c2b7" },
+    { "id": "actor-a", "name": "人物 · A", "type": "person", "bodyType": "standard", "pose": "sit", "position": [-1.55, 0, 0], "rotation": [0, 1.5708, 0], "scale": [1, 1, 1], "color": "#e8e3d8" },
+    { "id": "actor-b", "name": "人物 · B", "type": "person", "bodyType": "standard", "pose": "sit", "position": [1.55, 0, 0], "rotation": [0, -1.5708, 0], "scale": [1, 1, 1], "color": "#d6d0c2" }
+  ],
+  "camera": { "position": [0.9, 1.55, 1.9], "target": [-1.55, 1.15, 0], "focalLength": 50, "aspectRatio": "16:9" },
+  "lighting": {
+    "ambientIntensity": 1.35, "keyIntensity": 2.8, "fillIntensity": 1.1,
+    "keyAzimuth": 39, "keyElevation": 51, "exposure": 0.9,
+    "ambientColor": "#f7f1e6", "keyColor": "#fff6e8", "fillColor": "#a9c2c6"
+  },
+  "shots": [
+    { "id": "shot-01", "name": "镜头 A-正打", "camera": { "position": [0.9, 1.55, 1.9], "target": [-1.55, 1.15, 0], "focalLength": 50, "aspectRatio": "16:9" } },
+    { "id": "shot-02", "name": "镜头 B-反打", "camera": { "position": [-0.9, 1.55, 1.9], "target": [1.55, 1.15, 0], "focalLength": 50, "aspectRatio": "16:9" } },
+    { "id": "shot-03", "name": "镜头 C-越轴错误示范", "camera": { "position": [0.95, 1.55, -1.85], "target": [-1.55, 1.15, 0], "focalLength": 50, "aspectRatio": "16:9" } }
+  ]
+}

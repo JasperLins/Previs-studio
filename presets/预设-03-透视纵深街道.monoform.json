@@ -1,0 +1,49 @@
+{
+  "version": 16,
+  "settings": { "name": "预设 · 透视纵深街道", "fps": 24, "durationSeconds": 15, "loopPlayback": false },
+  "activeShotId": "shot-01",
+  "objects": [
+    { "id": "road", "name": "街道 · 车道", "type": "plane", "position": [0, 0.02, -12], "rotation": [0, 0, 0], "scale": [7, 1, 44], "color": "#b8b3aa" },
+    { "id": "sidewalk-left", "name": "街道 · 左人行道", "type": "plane", "position": [-5.2, 0.02, -12], "rotation": [0, 0, 0], "scale": [3, 1, 44], "color": "#ccc7bc" },
+    { "id": "sidewalk-right", "name": "街道 · 右人行道", "type": "plane", "position": [5.2, 0.02, -12], "rotation": [0, 0, 0], "scale": [3, 1, 44], "color": "#ccc7bc" },
+    { "id": "shop-l1", "name": "左街面 · 店 1", "type": "box", "position": [-10, 2.75, 2], "rotation": [0, 0, 0], "scale": [6, 5.5, 7], "color": "#d3cec3" },
+    { "id": "shop-l2", "name": "左街面 · 店 2", "type": "box", "position": [-10, 3.25, -7], "rotation": [0, 0, 0], "scale": [6, 6.5, 8], "color": "#cdc8bd" },
+    { "id": "shop-l3", "name": "左街面 · 店 3", "type": "box", "position": [-10, 2.5, -16.5], "rotation": [0, 0, 0], "scale": [6, 5, 7], "color": "#d8d3c8" },
+    { "id": "shop-l4", "name": "左街面 · 店 4", "type": "box", "position": [-10, 3.75, -27], "rotation": [0, 0, 0], "scale": [6, 7.5, 9], "color": "#d1ccc1" },
+    { "id": "shop-r1", "name": "右街面 · 店 1", "type": "box", "position": [10, 3, -1], "rotation": [0, 0, 0], "scale": [6, 6, 7], "color": "#d6d1c6" },
+    { "id": "shop-r2", "name": "右街面 · 店 2", "type": "box", "position": [10, 2.6, -10.5], "rotation": [0, 0, 0], "scale": [6, 5.2, 8], "color": "#d2cdc2" },
+    { "id": "shop-r3", "name": "右街面 · 店 3", "type": "box", "position": [10, 3.4, -21], "rotation": [0, 0, 0], "scale": [6, 6.8, 8], "color": "#cfcac0" },
+    { "id": "shop-r4", "name": "右街面 · 店 4", "type": "box", "position": [10, 2.8, -31], "rotation": [0, 0, 0], "scale": [6, 5.6, 7], "color": "#d4cfc4" },
+    { "id": "shop-l1-door", "name": "左街面 · 店门", "type": "door", "position": [-7.02, 1.1, 2.2], "rotation": [0, 1.5708, 0], "scale": [1.2, 2.2, 0.25], "color": "#c7c2b7" },
+    { "id": "shop-l1-window", "name": "左街面 · 橱窗", "type": "window", "position": [-7.02, 1.8, 0.2], "rotation": [0, 1.5708, 0], "scale": [1.5, 1.3, 0.22], "color": "#c7c2b7" },
+    { "id": "shop-r1-door", "name": "右街面 · 店门", "type": "door", "position": [7.02, 1.1, -1.6], "rotation": [0, -1.5708, 0], "scale": [1.2, 2.2, 0.25], "color": "#c7c2b7" },
+    { "id": "shop-r1-window", "name": "右街面 · 橱窗", "type": "window", "position": [7.02, 1.8, 0.6], "rotation": [0, -1.5708, 0], "scale": [1.5, 1.3, 0.22], "color": "#c7c2b7" },
+    { "id": "lamp-1-pole", "name": "路灯 1 · 灯杆", "type": "cylinder", "position": [-4.1, 2, -2], "rotation": [0, 0, 0], "scale": [0.12, 4, 0.12], "color": "#a9a49a" },
+    { "id": "lamp-1-head", "name": "路灯 1 · 灯头", "type": "box", "position": [-3.95, 4.02, -2], "rotation": [0, 0, 0], "scale": [0.55, 0.16, 0.3], "color": "#d9d4c6" },
+    { "id": "lamp-2-pole", "name": "路灯 2 · 灯杆", "type": "cylinder", "position": [-4.1, 2, -12], "rotation": [0, 0, 0], "scale": [0.12, 4, 0.12], "color": "#a9a49a" },
+    { "id": "lamp-2-head", "name": "路灯 2 · 灯头", "type": "box", "position": [-3.95, 4.02, -12], "rotation": [0, 0, 0], "scale": [0.55, 0.16, 0.3], "color": "#d9d4c6" },
+    { "id": "lamp-3-pole", "name": "路灯 3 · 灯杆", "type": "cylinder", "position": [-4.1, 2, -22], "rotation": [0, 0, 0], "scale": [0.12, 4, 0.12], "color": "#a9a49a" },
+    { "id": "lamp-3-head", "name": "路灯 3 · 灯头", "type": "box", "position": [-3.95, 4.02, -22], "rotation": [0, 0, 0], "scale": [0.55, 0.16, 0.3], "color": "#d9d4c6" },
+    { "id": "lamp-4-pole", "name": "路灯 4 · 灯杆", "type": "cylinder", "position": [-4.1, 2, -32], "rotation": [0, 0, 0], "scale": [0.12, 4, 0.12], "color": "#a9a49a" },
+    { "id": "lamp-4-head", "name": "路灯 4 · 灯头", "type": "box", "position": [-3.95, 4.02, -32], "rotation": [0, 0, 0], "scale": [0.55, 0.16, 0.3], "color": "#d9d4c6" },
+    { "id": "tree-1", "name": "行道树 · 1", "type": "tree", "position": [4.3, 1.3, -7], "rotation": [0, 0, 0], "scale": [1.8, 2.6, 1.8], "color": "#b8b4a4" },
+    { "id": "tree-2", "name": "行道树 · 2", "type": "tree", "position": [4.3, 1.3, -19], "rotation": [0, 0, 0], "scale": [1.8, 2.6, 1.8], "color": "#b8b4a4" },
+    { "id": "tree-3", "name": "行道树 · 3", "type": "tree", "position": [4.3, 1.3, -30], "rotation": [0, 0, 0], "scale": [1.8, 2.6, 1.8], "color": "#b8b4a4" },
+    { "id": "far-tower-1", "name": "远景 · 楼体 1", "type": "box", "position": [-6, 5.5, -42], "rotation": [0, 0, 0], "scale": [10, 11, 5], "color": "#e0dcd2" },
+    { "id": "far-tower-2", "name": "远景 · 楼体 2", "type": "box", "position": [3, 7, -44], "rotation": [0, 0, 0], "scale": [8, 14, 5], "color": "#e4e0d6" },
+    { "id": "far-tower-3", "name": "远景 · 楼体 3", "type": "box", "position": [11, 4.5, -40], "rotation": [0, 0, 0], "scale": [9, 9, 4], "color": "#dedad0" },
+    { "id": "actor-curb", "name": "人物 · 街边", "type": "person", "bodyType": "standard", "pose": "stand_relaxed", "position": [3.1, 0, -3.6], "rotation": [0, -1.5708, 0], "scale": [1, 1, 1], "color": "#e8e3d8" },
+    { "id": "actor-far", "name": "人物 · 远处", "type": "person", "bodyType": "standard", "pose": "walk", "position": [-1.3, 0, -25], "rotation": [0, 3.1416, 0], "scale": [1, 1, 1], "color": "#d6d0c2" }
+  ],
+  "camera": { "position": [0, 1.65, 9.5], "target": [0, 2, -40], "focalLength": 24, "aspectRatio": "16:9" },
+  "lighting": {
+    "ambientIntensity": 1.35, "keyIntensity": 2.8, "fillIntensity": 1.1,
+    "keyAzimuth": 39, "keyElevation": 51, "exposure": 0.9,
+    "ambientColor": "#f7f1e6", "keyColor": "#fff6e8", "fillColor": "#a9c2c6"
+  },
+  "shots": [
+    { "id": "shot-01", "name": "镜头 01", "camera": { "position": [0, 1.65, 9.5], "target": [0, 2, -40], "focalLength": 24, "aspectRatio": "16:9" } },
+    { "id": "shot-02", "name": "镜头 02", "camera": { "position": [2.6, 1.55, -5.5], "target": [-1, 1.25, -24], "focalLength": 35, "aspectRatio": "16:9" } },
+    { "id": "shot-03", "name": "镜头 03", "camera": { "position": [4.8, 1.5, -1.4], "target": [3.1, 1.15, -3.7], "focalLength": 50, "aspectRatio": "16:9" } }
+  ]
+}
