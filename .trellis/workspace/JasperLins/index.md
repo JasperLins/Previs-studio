@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 8
+- **Total Sessions**: 9
 - **Last Active**: 2026-10-24
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~187 | Active |
+| `journal-1.md` | ~209 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 9 | 2026-10-24 | T07 机位图导出与课堂发布（class-v1） | `9b55f3e`, `5c01875` | `class` |
 | 8 | 2026-10-24 | T06b 运动层与生成版输出 | `8b8a839`, `13bc534`, `33e9247` | `class` |
 | 7 | 2026-10-24 | T06 提示词编译器与机位词面板 | `97fb645`, `b945a49` | `class` |
 | 6 | 2026-10-24 | T05 标注层补全 | `b2e735b`, `0c6df50` | `class` |

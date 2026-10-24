@@ -185,3 +185,25 @@ promptCompiler 四模块（映射档位/纯投影含 36×24 画幅裁切与高�
 ### Status
 
 [OK] **Completed**
+
+
+## Session 9: T07 机位图导出与课堂发布（class-v1）
+
+**Date**: 2026-10-24
+**Task**: T07 机位图导出与课堂发布（class-v1）
+**Branch**: `class`
+
+### Summary
+
+exportDiagram SVG 纯函数渲染（A4 白底/图例/比例尺/全符号）+ 栅格化下载 + 课堂使用说明；视觉审查修 4 缺陷（墙单线 bug 等）+ 补对象旋转；回归清单全项过（含真实 PNG/MP4 导出）；class-v1 标签 + PATCHES 收口。项目 T00–T07 全量完成。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9b55f3e` | (see git log) |
+| `5c01875` | (see git log) |
+
+### Status
+
+[OK] **Completed**
