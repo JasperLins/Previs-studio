@@ -207,3 +207,17 @@ exportDiagram SVG 纯函数渲染（A4 白底/图例/比例尺/全符号）+ 栅
 ### Status
 
 [OK] **Completed**
+
+## Session 10: 层级双击重命名 + 滑块数值键入（S6/S7）
+
+**Date**: 2026-10-24
+**Task**: 10-24-layer-rename-and-slider-input
+**Branch**: `class`
+
+### Summary
+
+场景层级双击就地重命名（Enter/blur 提交、Esc 取消、空值回退、30 字上限），改名按 object.id 扇出到全部镜头快照使机位词跨镜头同步（编译器纯函数派生，零额外代码）；全部滑块（位置/旋转/缩放/关节/焦距/动作相位）数值可键入，非法/超轨道范围自动还原（还原而非 clamp，用户定案），合法值对齐 step 网格。新接缝 S6/S7 登记 PATCHES.md；新文件 SliderNumberInput/sliderNumber（11 单测）。检查修复 2 缺陷：focus+blur 静默吸附（dirtyRef）、无改动空改名撤销记录（未变化守卫）。构建 + 136 diagram 单测回归全绿。
+
+### Status
+
+[OK] **Completed**
