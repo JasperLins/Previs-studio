@@ -20,3 +20,19 @@
 - [ ] 有关键帧的人物显示带编号路径；删关键帧后路径同步更新
 - [ ] 同场 3 个镜头的机位以幽灵正确叠显，异场镜头不出现
 - [ ] 全部标注不进成片导出（导一帧核对）
+
+## 验收自检记录（2026-10-24）
+
+- [x] 拖机位过轴线警告实时出现/消失，侧别与手算一致（3 位置）：基准侧（7.4,8.2，叉积+41）无警告 → 越线（-5,-5，叉积−23）横幅出现+机位标签 dg-warn 橙 → 回基准全部消除。移动经机位位置滑杆（gizmo 拖拽自动化限制，spec 有注记）。
+- [x] 注视目标：面板设「奶奶 看 平台」→ diagram.gazeTargets.actor-lead.objectId=block-stage 落盘；清除 → 恢复定长模式（gazeTargets 空）。视线渲染视觉核对手顺（全景截图留档）。
+- [~] 关键帧路径：pathPoints 排序去重与层渲染逻辑单测覆盖；**时间轴拖帧无法自动化**（点击/拖动均不移动播放头），打帧浏览器实测留人工（真人拖时间轴秒级）。
+- [x] 同场幽灵：3 镜同场 → 当前镜外 2 个幽灵标签（镜头 01/02）正确叠显；异场判定单测覆盖（对象 id 交集）。
+- [x] 图层开关：幽灵 off → 标签全消且 layers.ghosts=false 持久化；标签 off → 对象名标签消（机位牌归 frustum 层，符合规格）；恢复全回。
+- [x] 导出隔离：标注全挂 EditorScene（编辑画布），PNG/MP4 走 CameraPreview（结构论证同 T03）。
+
+## 实现与执行偏离记录
+
+1. **trellis-implement 子代理在用量上限处中断**（步骤 6 接缝前）：我方层（annotations/ 三件、TopViewOverlay 面板、CameraGizmo 重构抽 CameraSymbol+warned）完整且 105/105 测试过；**App/Viewport 接缝、styles、PATCHES 由主会话补齐**，check 阶段因同一限制改为内联审查（红线 grep 空、写操作审查过、重构等价点核对过）——quota 恢复后建议补一轮 trellis-check 复核。
+2. **图层面板 pointer-events 修复**（主会话）：面板继承 overlay 根 pointer-events:none 导致点击穿透到画布，补 .dg-layer-panel { pointer-events:auto } 后开关全通。
+3. 越轴基准侧语义：基准=该轴线对首个有效侧别，拖回基准侧警告消除（压线不警，避免抖动）——写入 data.js 注释与 axisBaselineRef 实现。
+4. 地面点注视的点选 UI 未做（design §4 既定偏离，数据结构已支持）。
