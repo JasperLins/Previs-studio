@@ -74,3 +74,25 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 4: T03 机位视锥 Gizmo 与标签牌
+
+**Date**: 2026-10-24
+**Task**: T03 机位视锥 Gizmo 与标签牌
+**Branch**: `class`
+
+### Summary
+
+frustum.js 纯函数（20 测：六档焦距双校验/入画/锥长/字母）+ CameraGizmo（扇形+机身符号+标签牌）；主会话实测修复：drei Html 在 R3F v9 多 Canvas 不产出 DOM→自管 DOM 标签、边线改盒体；浏览器验收四项全过（焦距联动/改名与切镜归属/导出结构隔离/frustum 开关同隐）；坑沉淀 spec（Html 桥接、软重载旧模块缓存、HMR 偶发失灵）。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2fca5e6` | (see git log) |
+| `14eac65` | (see git log) |
+
+### Status
+
+[OK] **Completed**
