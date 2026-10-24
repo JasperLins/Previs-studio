@@ -4,7 +4,7 @@
 //
 // 参数语义（全部相对物体）：
 // - azimuth：绕物体朝向（rotation.y）的水平偏角，0 = 物体正前方（朝向 +Z 旋转后的方向）
-// - framing：取景留白系数，越小越近（1 ≈ 半高恰好撑满垂直视场）
+// - framing：取景留白系数，越小越近（1 ≈ 表观高恰好撑满垂直视场；表观高 = height·cos|pitch| + 体厚·sin|pitch|）
 // - focal：焦距 mm（clamp 18–120，与 normalizeCamera 一致）
 // - eye：相机高度系数（非 null 时 cameraY = center.y + (eye − 0.5) × 身高，水平距 = 取景距离；pitch 仅作文档语义）
 // - pitch：eye 为 null（俯拍类）时取景距离为沿视线斜距：水平距 = d·cos(pitch)，cameraY = center.y + d·sin(pitch)
@@ -15,6 +15,7 @@
 const BODY_HEIGHT_FACTORS = { tall: 1.14, broad: 1.03, female: 0.98, male: 1.06 }
 const PERSON_BASE_HEIGHT = 1.8 // 基准身高（米）
 const PERSON_BASE_WIDTH = 0.55 // 基准肩宽（米）
+const PERSON_BASE_DEPTH = 0.3 // 基准体厚（米，俯视平面轮廓的短边）
 const FOCAL_MIN = 18
 const FOCAL_MAX = 120
 const FRAMING_ASPECT = 16 / 9 // 水平取景复核基准画幅
@@ -29,8 +30,8 @@ export const SHOT_CAMERA_PRESETS = [
   { id: 'side_close', label: '侧面近景', hint: '物体正侧方 · 近景', azimuth: Math.PI / 2, pitch: 0.08, framing: 0.68, focal: 50, eye: 0.72 },
   { id: 'back_medium', label: '背面中景', hint: '物体正后方 · 中景', azimuth: Math.PI, pitch: 0.10, framing: 1.15, focal: 42, eye: 0.62 },
   { id: 'high_45', label: '45°俯拍', hint: '前方 45° 俯角俯拍', azimuth: Math.PI / 4, pitch: 0.785, framing: 1.35, focal: 42, eye: null },
-  { id: 'top_down', label: '俯拍全景', hint: '高角度俯拍 · 全景', azimuth: Math.PI / 4, pitch: 1.35, framing: 1.60, focal: 35, eye: null },
-  { id: 'birdseye', label: '鸟瞰', hint: '近垂直向下 · 鸟瞰', azimuth: 0, pitch: 1.52, framing: 1.45, focal: 28, eye: null },
+  { id: 'top_down', label: '俯拍全景', hint: '高角度俯拍 · 全景', azimuth: Math.PI / 4, pitch: 1.35, framing: 2.0, focal: 35, eye: null },
+  { id: 'birdseye', label: '鸟瞰', hint: '近垂直向下 · 鸟瞰', azimuth: 0, pitch: 1.52, framing: 3.2, focal: 28, eye: null },
   { id: 'low_angle', label: '低角度仰拍', hint: '低机位仰拍', azimuth: Math.PI * 0.08, pitch: -0.30, framing: 1.05, focal: 32, eye: 0.18 },
   { id: 'low_wide', label: '低角度广角', hint: '低机位仰拍 · 广角夸张', azimuth: Math.PI * 0.16, pitch: -0.42, framing: 1.35, focal: 20, eye: 0.10 },
   { id: 'dutch', label: '荷兰角', hint: '前侧方 · 画面倾斜', azimuth: Math.PI * 0.12, pitch: 0.06, framing: 1.10, focal: 40, eye: 0.62, roll: 0.22 },
@@ -78,7 +79,7 @@ export function objectFramingBounds(object) {
     const factor = BODY_HEIGHT_FACTORS[object.bodyType] || 1
     const height = PERSON_BASE_HEIGHT * factor * scale[1]
     const width = PERSON_BASE_WIDTH * scale[0]
-    const depth = PERSON_BASE_WIDTH * scale[2]
+    const depth = PERSON_BASE_DEPTH * scale[2]
     const root = object.rigRoot || [0, 0, 0]
     const localCenter = [root[0] * scale[0], root[1] * scale[1] + height / 2, root[2] * scale[2]]
     const offset = rotateVectorXYZ(localCenter, rotation)
@@ -97,12 +98,16 @@ export function objectFramingBounds(object) {
 export function presetCameraForObject(presetId, object, currentCamera) {
   const preset = SHOT_CAMERA_PRESETS.find(option => option.id === presetId)
   if (!preset || presetId === 'current' || !object) return null
-  const { center, height, width, yaw } = objectFramingBounds(object)
+  const { center, height, width, depth, yaw } = objectFramingBounds(object)
   const focalLength = Math.min(FOCAL_MAX, Math.max(FOCAL_MIN, preset.focal))
   // 垂直视场（全画幅 24mm 高对应 three.js 垂直 fov 口径）：fovV = 2·atan(12/focal)
   const tanHalfFovV = 12 / focalLength
-  // 垂直取景距离（半高入画 × 留白）与水平复核（16:9、半宽入画，宽物体不出画）取大
-  const verticalDistance = (height / 2) / tanHalfFovV * preset.framing
+  // 表观高度：俯角 θ 越大，物体身高轴越贴近视线方向，画面里的竖向占幅是
+  // height·cosθ + 体厚·sinθ（近垂直俯视只看到平面轮廓），按它预留画面才不缩成小点
+  const theta = Math.abs(preset.pitch || 0)
+  const apparentHeight = height * Math.cos(theta) + depth * Math.sin(theta)
+  // 垂直取景距离（半表观高入画 × 留白）与水平复核（16:9、半宽入画，宽物体不出画）取大
+  const verticalDistance = (apparentHeight / 2) / tanHalfFovV * preset.framing
   const horizontalCheck = (width / 2) / (tanHalfFovV * FRAMING_ASPECT) * preset.framing
   const distance = Math.max(verticalDistance, horizontalCheck)
   // 水平方位：yaw + azimuth 那一侧的反向看向（0 = 物体正前方 +Z 侧）

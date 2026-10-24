@@ -1892,7 +1892,7 @@ export default function App() {
     const override = presetId && presetTarget ? presetCameraForObject(presetId, presetTarget, camera) : null
     const nextShot = {
       id,
-      name: uniqueShotName(shots, defaultShotName(shots.length)),
+      name: uniqueShotName(shots, override && preset?.label ? preset.label : defaultShotName(shots.length)),
       thumbnail,
       fps: settings.fps,
       durationSeconds: settings.durationSeconds,

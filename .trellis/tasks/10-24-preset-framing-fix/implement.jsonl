@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/fork-discipline.md", "reason": "纪律：改动限于 src/shotPresets.js（新文件自由改）与 App.jsx S9 接缝内（addShot 命名一行）；styles.css 不动；PATCHES/base-audit S9 行补记"}
+{"file": ".trellis/spec/base-audit.md", "reason": "S9 接缝定义与锚点；相机数据模型口径"}

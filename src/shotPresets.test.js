@@ -49,10 +49,11 @@ test('SHOT_CAMERA_PRESETS：15 个预设、id 唯一、current 之外参数齐�
   }
 })
 
-test('标准人物 bounds：身高 1.8、宽 0.55、中心在身高中点、yaw 跟随 rotation[1]', () => {
+test('标准人物 bounds：身高 1.8、宽 0.55、体厚 0.3、中心在身高中点、yaw 跟随 rotation[1]', () => {
   const bounds = objectFramingBounds(standardPerson)
   assert.equal(bounds.height, 1.8)
   assert.equal(bounds.width, 0.55)
+  assert.equal(bounds.depth, 0.3)
   assert.deepEqual(bounds.center, [0, 0.9, 0])
   assert.equal(bounds.yaw, 0)
   const turned = objectFramingBounds({ ...standardPerson, rotation: [0, Math.PI / 2, 0] })
@@ -104,18 +105,35 @@ test('俯拍类（eye=null）相机高于取景中心；低角度类低于取景
   }
 })
 
-test('俯拍类取景距离为沿视线斜距：相机到目标距离 ≈ 按 framing 计算的取景距离（构图不随俯角缩水）', () => {
-  const { height, width, center } = objectFramingBounds(standardPerson)
+test('俯拍类取景距离为沿视线斜距：相机到目标距离 ≈ 按表观高度计算的取景距离（构图不随俯角缩水）', () => {
+  const { height, width, depth, center } = objectFramingBounds(standardPerson)
   for (const id of ['high_45', 'top_down', 'birdseye']) {
     const preset = SHOT_CAMERA_PRESETS.find(option => option.id === id)
     const tanHalfFov = 12 / preset.focal
+    // 表观高度：身高轴贴近视线被压缩 + 体厚贡献（与实现同公式）
+    const theta = Math.abs(preset.pitch)
+    const apparent = height * Math.cos(theta) + depth * Math.sin(theta)
     const expected = Math.max(
-      (height / 2) / tanHalfFov * preset.framing,
+      (apparent / 2) / tanHalfFov * preset.framing,
       (width / 2) / (tanHalfFov * (16 / 9)) * preset.framing,
     )
     const camera = presetCameraForObject(id, standardPerson, currentCamera)
     const slant = distanceToTarget(camera, center)
     assert.ok(Math.abs(slant - expected) < 1e-9 * expected + 1e-9, `${id} 斜距 ${slant} 应等于取景距离 ${expected}`)
+  }
+})
+
+test('俯拍三预设人物画面占幅落在目标区间（展现人物的产品口径）', () => {
+  const targets = { high_45: [0.65, 0.80], top_down: [0.45, 0.60], birdseye: [0.25, 0.40] }
+  for (const [id, [min, max]] of Object.entries(targets)) {
+    const camera = presetCameraForObject(id, standardPerson, currentCamera)
+    const slant = distanceToTarget(camera, expectedTarget(standardPerson, id))
+    const tanHalfFov = 12 / camera.focalLength
+    const { height, depth } = objectFramingBounds(standardPerson)
+    const preset = SHOT_CAMERA_PRESETS.find(option => option.id === id)
+    const apparent = height * Math.cos(Math.abs(preset.pitch)) + depth * Math.sin(Math.abs(preset.pitch))
+    const fill = apparent / (2 * tanHalfFov * slant)
+    assert.ok(fill >= min && fill <= max, `${id} 画面占幅 ${fill.toFixed(3)} 应在 [${min}, ${max}]`)
   }
 })
 

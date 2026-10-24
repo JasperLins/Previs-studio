@@ -248,3 +248,17 @@ ComfyUI 式项目库：IndexedDB `monoform-projects` 权威存储 + localStorage
 ### Status
 
 [OK] **Completed**
+
+## Session 13: 俯拍预设表观高度取景修复与预设名命名（S9 跟进）
+
+**Date**: 2026-10-24
+**Task**: 10-24-preset-framing-fix
+**Branch**: `class`
+
+### Summary
+
+用户反馈俯拍三预设人物太小 + 希望镜头用预设名命名。根因：取景公式按世界身高预留画面，而俯角 θ 下人物表观高度 = H·cosθ+体厚·sinθ（近垂直只看到平面轮廓）——45°俯拍/俯拍全景/鸟瞰实际占幅仅 61/31/22%。修复：垂直取景距离改按表观高度计算（人物体厚 0.3×scale[2]、几何体 scale[2]），俯拍全景 framing 1.6→2.0、鸟瞰 1.45→3.2，占幅升至 74/50/31%；预设创建镜头名 = uniqueShotName(预设label)。应用内 localStorage 相机数值与理论值逐一比对一致（误差 <2mm），45°俯拍/鸟瞰截图视觉判定 PASS，183 单测全绿。App.jsx 提交时用 filtered patch 只含命名 hunk（用户并行改的监看窗默认值不混入）。
+
+### Status
+
+[OK] **Completed**
