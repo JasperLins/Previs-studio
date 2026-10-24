@@ -1890,9 +1890,10 @@ export default function App() {
     const presetTarget = objects.find(o => o.id === shotPresetTargetId)
     const preset = SHOT_CAMERA_PRESETS.find(option => option.id === presetId)
     const override = presetId && presetTarget ? presetCameraForObject(presetId, presetTarget, camera) : null
+    const presetShotName = override && preset?.label && presetTarget ? `${presetTarget.name} ${preset.label}` : null
     const nextShot = {
       id,
-      name: uniqueShotName(shots, override && preset?.label ? preset.label : defaultShotName(shots.length)),
+      name: uniqueShotName(shots, presetShotName || defaultShotName(shots.length)),
       thumbnail,
       fps: settings.fps,
       durationSeconds: settings.durationSeconds,
