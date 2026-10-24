@@ -40,7 +40,7 @@ React 19 + Vite 8 + Three.js 0.170 + @react-three/fiber 9 + @react-three/drei 10
 |---|---|---|---|
 | S1 | App.jsx | 视口工具栏区域加「顶视」切换按钮；topView 系视图态与 toggleTopView（进出保存/恢复 editorView，不触场景数据；与编辑/摄像机视角三模式互斥）；MainViewport key 三态与 topView/planeLock 传参；viewport-canvas-layer 挂 TopViewOverlay 与 dg-topview class；导航提示 topView 分支 | 模式入口 |
 | S2 | App.jsx/Viewport.jsx | editorView 增加正交顶视预设的读写（Canvas orthographic + EditorScene 用 TopViewControls 替换上游 OrbitControls）；顶视下 SceneObject/CameraModel 的 TransformControls 约束传参（planeLock prop 透传：translate 锁 Y、rotate 只留水平环，planeLock 时 syncTransform 调 applyPlaneLock 双保险，3D 视图原样提交不受影响） | 顶视相机 + 地面约束 |
-| S3 | Viewport.jsx | EditorScene 挂载区挂载 diagram 层组件：首个挂载件 = TopViewControls / TopViewGrid（顶视相机控制与米制网格/图纸底），顶视时屏蔽上游背景色/雾/编辑相机回写；后续 Gizmo 层与符号替换层（T03+，传 objects/camera/selectedId 引用）在同一挂载区追加 | 标注与符号 |
+| S3 | Viewport.jsx | EditorScene 挂载区挂载 diagram 层组件：首个挂载件 = TopViewControls / TopViewGrid（顶视相机控制与米制网格/图纸底），顶视时屏蔽上游背景色/雾/编辑相机回写；后续 Gizmo 层与符号替换层（T03+，传 objects/camera/selectedId 引用）在同一挂载区追加。T04 追加：①顶视下 `SceneObject` 的 `hideModel` 派生（`planeLock && (type∈SWAP_TYPES \|\| isThinWall(scale))`，包住 content group 的 visible 隐藏原模型，TransformControls 仍挂原 group、拖拽路径不变）；②符号层可点选（SymbolLayer 符号 mesh raycast 命中 → stopPropagation → 透传既有 onSelect，被隐藏模型的选取由符号接管）；符号层同样仅挂 EditorScene（结构性不进 PNG/MP4 导出） | 标注与符号 |
 | S4 | App.jsx | 右侧面板加页签「机位词」（P2） | 提示词面板 |
 | S5 | App.jsx | 工程 normalize/保存逻辑透传 `diagram` 扩展字段 | 数据兼容 |
 
