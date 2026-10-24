@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/fork-discipline.md", "reason": "验收核对：App.jsx 改动仅在 S9 锚点、无其他上游文件改动、styles.css 仅末尾追加 dg-shot-preset-*、PATCHES.md 已登记 S9"}
+{"file": ".trellis/spec/base-audit.md", "reason": "核对 S9 接缝落点与台账描述一致（状态区/入口/挂载三处）"}
+{"file": ".trellis/spec/product-spec.md", "reason": "第 4 节验收总纲：既有流程回归（加对象/切镜/导出）不因本特性破坏"}

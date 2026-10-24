@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/fork-discipline.md", "reason": "上游文件改动纪律：App.jsx 只许 S9 接缝内挂载传参、功能逻辑放新文件（src/shotPresets.js + src/ShotPresetDialog.jsx，S7 先例）、styles.css 只许末尾追加 dg- 前缀类"}
+{"file": ".trellis/spec/base-audit.md", "reason": "基座文件地图与接缝表；本任务 S9 接缝已登记（锚点：App() 状态区/addShot/SettingsDialog 挂载行附近），实现须与台账一致；相机数据模型 {position, rotation, focalLength, aspectRatio} 与 objects 类型全集在此"}

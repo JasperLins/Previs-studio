@@ -22,12 +22,15 @@ import { svgToPngBlob } from './diagram/exportDiagram/raster.js'
 import { SliderNumberInput } from './SliderNumberInput.jsx'
 import { ProjectsPanel } from './projects/ProjectsPanel.jsx'
 import { createProjectId, deleteEntry, getEntry, listEntries, makeEntryFromProject, openStore, putEntry, uniqueProjectName } from './projects/projectStore.js'
+import ShotPresetDialog from './ShotPresetDialog.jsx'
+import { SHOT_CAMERA_PRESETS, presetCameraForObject } from './shotPresets.js'
 
 const CAMERA_ID = '__shot_camera__'
 const PROJECT_STORAGE_KEY = 'monoform-project'
 const ACTIVE_PROJECT_KEY = 'monoform-active-project-id'
 const LEGACY_PROJECT_STORAGE_KEY = 'stageframe-project'
 const CUSTOM_POSE_STORAGE_KEY = 'monoform-custom-poses'
+const MONITOR_MODE_KEY = 'monoform-monitor-mode'
 const PROJECT_VERSION = 16
 const DEFAULT_PROJECT_SETTINGS = {
   name: '未命名场景',
@@ -1314,9 +1317,17 @@ export default function App() {
   const [lightingPanelOpen, setLightingPanelOpen] = useState(false)
   const [cameraAnglePanelOpen, setCameraAnglePanelOpen] = useState(false)
   const [viewOptionsCollapsed, setViewOptionsCollapsed] = useState(false)
-  const [monitorMode, setMonitorMode] = useState('normal')
+  // 监看窗口默认收起（用户口径：蓝色预览区域无需常驻展示）；上次选择记忆在 localStorage，
+  // 收起期间镜头缩略图沿用旧图（thumbnailFromMonitor 拿不到画布时优雅回退）。
+  const [monitorMode, setMonitorMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem(MONITOR_MODE_KEY)
+      return saved === 'normal' || saved === 'expanded' ? saved : 'minimized'
+    } catch { return 'minimized' }
+  })
   const [editorView, setEditorView] = useState({ position: [8.5, 6.4, 9.5], target: [0, 1, 0] })
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [shotPresetTargetId, setShotPresetTargetId] = useState(null)
   const [viewFocusRequest, setViewFocusRequest] = useState(null)
   const [toast, setToast] = useState('')
   const [saveStatus, setSaveStatus] = useState(startupProject ? '已恢复自动保存' : '自动保存已开启')
@@ -1518,6 +1529,10 @@ export default function App() {
   useEffect(() => {
     try { localStorage.setItem(CUSTOM_POSE_STORAGE_KEY, JSON.stringify(customPoses)) } catch { /* 姿势库写入失败时不影响工程编辑 */ }
   }, [customPoses])
+
+  useEffect(() => {
+    try { localStorage.setItem(MONITOR_MODE_KEY, monitorMode) } catch { /* 写入失败不影响会话内使用 */ }
+  }, [monitorMode])
 
   useEffect(() => {
     if (selectedKeyframe?.kind === 'object' && selectedKeyframe.trackId !== selectedId) setSelectedKeyframe(null)
@@ -1862,10 +1877,19 @@ export default function App() {
     setToast(`已切换到“${target.name}”`)
   }
 
-  const addShot = () => {
+  const handleAddShotClick = () => {
+    const target = objects.find(o => o.id === selectedId)
+    if (target) setShotPresetTargetId(target.id)
+    else addShot()
+  }
+
+  const addShot = (presetId = null) => {
     if (shots.length >= 30) { setToast('每个工程最多 30 个镜头'); return }
     const thumbnail = thumbnailFromMonitor()
     const id = `shot-${uid()}`
+    const presetTarget = objects.find(o => o.id === shotPresetTargetId)
+    const preset = SHOT_CAMERA_PRESETS.find(option => option.id === presetId)
+    const override = presetId && presetTarget ? presetCameraForObject(presetId, presetTarget, camera) : null
     const nextShot = {
       id,
       name: uniqueShotName(shots, defaultShotName(shots.length)),
@@ -1874,7 +1898,7 @@ export default function App() {
       durationSeconds: settings.durationSeconds,
       loopPlayback: settings.loopPlayback,
       objects: cloneProjectValue(objects),
-      camera: cloneProjectValue(camera),
+      camera: override ? { ...cloneProjectValue(camera), ...override } : cloneProjectValue(camera),
       lighting: cloneProjectValue(lighting),
       reference: cloneProjectValue(DEFAULT_REFERENCE),
       keyframes: [],
@@ -1882,7 +1906,7 @@ export default function App() {
     }
     setShots(list => [...list.map(shot => shot.id === activeShotId ? liveShotRecord(shot, thumbnail || shot.thumbnail) : shot), nextShot])
     applyShotState(nextShot)
-    setToast(`已新建“${nextShot.name}” · 场景已复制，关键帧和参考图为空`)
+    setToast(override ? `已新建“${nextShot.name}” · 机位：${preset?.label || ''}` : `已新建“${nextShot.name}” · 场景已复制，关键帧和参考图为空`)
   }
 
   const duplicateShot = shotId => {
@@ -2509,7 +2533,7 @@ export default function App() {
       </header>
 
       <div className="workspace">
-        <LeftSidebar objects={objects} selectedId={selectedId} onSelect={setSelectedId} onAddPerson={addPerson} onAddPrimitive={addPrimitive} onImport={importModel} onToggleVisible={id => updateObjectById(id, { visible: objects.find(item => item.id === id)?.visible === false })} onToggleLock={id => updateObjectById(id, { locked: !objects.find(item => item.id === id)?.locked })} onRenameObject={renameObject} shots={displayedShots} activeShotId={activeShotId} onSelectShot={switchShot} onAddShot={addShot} onDuplicateShot={duplicateShot} onDeleteShot={deleteShot} onRenameShot={renameShot} onCaptureShot={captureShotThumbnail} />
+        <LeftSidebar objects={objects} selectedId={selectedId} onSelect={setSelectedId} onAddPerson={addPerson} onAddPrimitive={addPrimitive} onImport={importModel} onToggleVisible={id => updateObjectById(id, { visible: objects.find(item => item.id === id)?.visible === false })} onToggleLock={id => updateObjectById(id, { locked: !objects.find(item => item.id === id)?.locked })} onRenameObject={renameObject} shots={displayedShots} activeShotId={activeShotId} onSelectShot={switchShot} onAddShot={handleAddShotClick} onDuplicateShot={duplicateShot} onDeleteShot={deleteShot} onRenameShot={renameShot} onCaptureShot={captureShotThumbnail} />
         <section className="viewport-shell">
           <div className="viewport-toolbar floating-panel">
             <ToolButton icon={MousePointer2} label="选择" active={!['translate', 'rotate', 'scale'].includes(transformMode)} onClick={() => setTransformMode('select')} shortcut="Q" />
@@ -2671,6 +2695,7 @@ export default function App() {
         </>
       )}
       {settingsOpen && <ProjectSettingsDialog settings={settings} maxKeyframeFrame={maxKeyframeFrame} onApply={applySettings} onClose={() => setSettingsOpen(false)} />}
+      {shotPresetTargetId && <ShotPresetDialog object={objects.find(o => o.id === shotPresetTargetId)} presets={SHOT_CAMERA_PRESETS} onPick={id => { setShotPresetTargetId(null); addShot(id) }} onCancel={() => setShotPresetTargetId(null)} />}
       {toast && <div className="toast"><span />{toast}</div>}
     </main>
   )

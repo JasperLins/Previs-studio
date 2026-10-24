@@ -235,3 +235,16 @@ ComfyUI 式项目库：IndexedDB `monoform-projects` 权威存储 + localStorage
 ### Status
 
 [OK] **Completed**
+## Session 12: 选中物体新建镜头时机位预设（S9）
+
+**Date**: 2026-10-24
+**Task**: 10-24-shot-camera-presets
+**Branch**: `class`
+
+### Summary
+
+场景层级选中物体后点「新建镜头」弹「添加机位」预设面板（15 预设：当前视角/正面特写·中景·全景/侧面跟拍·近景/背面中景/45°俯拍/俯拍全景/鸟瞰/低角度仰拍·广角/荷兰角/过肩左·右）；选预设后新镜头照常复制场景、仅 camera 替换为按物体包围尺寸+自身朝向（rotation.y）计算的机位，人物身高按体型系数、几何体按 scale 估算，取景距离按焦距视场角+景别留白计算；未选中物体保持旧 addShot 行为；取消三路径零副作用。新模块 src/shotPresets.js（11 单测）+ src/ShotPresetDialog.jsx，接缝 S9 登记。check 后修正设计缺陷：俯拍类取景距离由水平距改为沿视线斜距（鸟瞰不再缩成小点）。IAB 真浏览器验证：面板流程/取消/45°俯拍与旋转平台正面构图截图核验全过，182 单测全绿。
+
+### Status
+
+[OK] **Completed**
