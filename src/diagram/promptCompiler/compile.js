@@ -157,8 +157,19 @@ export function compileShot(input) {
   const objectTracks = Array.isArray(input?.objectTracks) ? input.objectTracks : []
   const fps = Number(input?.fps) || 24
   const durationSeconds = Number(input?.durationSeconds) || 0
-  const subjectXZ = subject ? [objectPosition(subject.object)[0], 0, objectPosition(subject.object)[2]] : null
-  const motion = cameraMotionWord(cameraTrack, subjectXZ)
+  // 推拉判定配对主体首末帧位置：主体有轨用轨点（跟拍），否则同点（静止）
+  let subjectStart = subject ? [objectPosition(subject.object)[0], objectPosition(subject.object)[2]] : null
+  let subjectEnd = subjectStart
+  if (subject) {
+    const track = objectTracks.find(t => t && t.id === subject.object.id)
+    const points = Array.isArray(track?.points) ? track.points.filter(p => Number.isFinite(p.x) && Number.isFinite(p.z)) : []
+    if (points.length >= 2) {
+      const sorted = points.slice().sort((a, b) => a.frame - b.frame)
+      subjectStart = [sorted[0].x, sorted[0].z]
+      subjectEnd = [sorted[sorted.length - 1].x, sorted[sorted.length - 1].z]
+    }
+  }
+  const motion = cameraMotionWord(cameraTrack, subjectStart, subjectEnd)
   const pace = paceWord(cameraTrack, fps)
   const motionParts = []
   motionParts.push(`${pace ? pace : ''}${motion.word}${motion.detail ? `（${motion.detail}）` : ''}`.trim())

@@ -42,8 +42,10 @@ function horizontalDeltaDeg(yawA, yawB) {
   return d
 }
 
-// 机位运动词。subjectPos：主体（人或场景中心）XZ，用于推拉判定与摇镜方向。
-export function cameraMotionWord(track, subjectPos) {
+// 机位运动词。subjectStart/subjectEnd：主体（人或场景中心）首末帧 XZ（跟拍时主体在动，
+// 推拉判定必须配对各自帧的位置；静止主体两参传同一点）。
+export function cameraMotionWord(track, subjectStart, subjectEnd) {
+  const subjectPos = subjectEnd || subjectStart
   const list = (Array.isArray(track) ? track : []).filter(k => k && Number.isFinite(Number(k.frame))).slice().sort((a, b) => a.frame - b.frame)
   if (list.length < 2) return { word: '固定镜头', detail: '' }
   const first = list[0]
@@ -59,8 +61,10 @@ export function cameraMotionWord(track, subjectPos) {
 
   let word = '固定镜头'
   let detail = ''
-  const toSubjectStart = pa && subjectPos ? Math.hypot(subjectPos[0] - pa[0], subjectPos[1] - pa[2]) : null
-  const toSubjectEnd = pb && subjectPos ? Math.hypot(subjectPos[0] - pb[0], subjectPos[1] - pb[2]) : null
+  const ps = subjectStart || subjectEnd
+  const pe = subjectEnd || subjectStart
+  const toSubjectStart = pa && ps ? Math.hypot(ps[0] - pa[0], ps[1] - pa[2]) : null
+  const toSubjectEnd = pb && pe ? Math.hypot(pe[0] - pb[0], pe[1] - pb[2]) : null
   if (zoomed && !moved && !panned) {
     word = zoomDelta > 0 ? '变焦推近' : '变焦拉远' // 焦距变大 = 视场变窄 = 推近
   } else if (panned && !moved) {

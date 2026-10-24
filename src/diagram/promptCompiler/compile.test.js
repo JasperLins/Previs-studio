@@ -245,3 +245,19 @@ test('运动层集成：机位推近 + 人物走位 + 时长进入卡片，生�
   // 人读全卡仍含一致性层
   assert.ok(r.text.includes(r.layers.consistency))
 })
+
+test('运动规则：跟拍时推拉判定配对主体轨首末位置（主体同步移动不误判拉远）', () => {
+  // 相机右移 4m，主体同步右移 4m（跟拍）——到主体距离不变 → 应判横移跟拍而非拉远
+  const track = [
+    { frame: 0, position: [0, 1.6, 6], yaw: 0, focalLength: 42 },
+    { frame: 96, position: [4, 1.6, 6], yaw: 0, focalLength: 42 },
+  ]
+  const word = cameraMotionWord(track, [0, 0.2], [4, 0.2])
+  assert.equal(word.word, '右移跟拍')
+  // 反向（左移）
+  const track2 = [
+    { frame: 0, position: [4, 1.6, 6], yaw: 0, focalLength: 42 },
+    { frame: 96, position: [0, 1.6, 6], yaw: 0, focalLength: 42 },
+  ]
+  assert.equal(cameraMotionWord(track2, [4, 0.2], [0, 0.2]).word, '左移跟拍')
+})
