@@ -81,7 +81,8 @@ test('projection：orientationAngleDeg 四象限', () => {
 test('用例1：门口朝北拍——男主左前景侧面、奶奶中后景偏左正面、两人距离图测一致', () => {
   const r = compileShot({ objects: baseline(), camera: camAtDoor })
   assert.ok(r.layers.blocking.includes('男主'), r.layers.blocking)
-  assert.ok(/男主：[^；]*左侧?[^；]*(前景|中景)/.test(r.layers.blocking) || r.layers.blocking.includes('男主：左'), r.layers.blocking)
+  assert.ok(r.layers.blocking.includes('男主在画面左'), r.layers.blocking)
+  assert.ok(/前景|中景距离/.test(r.layers.blocking), r.layers.blocking)
   assert.ok(r.layers.blocking.includes('侧面'), r.layers.blocking)
   assert.ok(r.layers.blocking.includes('奶奶'), r.layers.blocking)
   assert.ok(r.layers.blocking.includes('正面'), r.layers.blocking)
@@ -96,7 +97,7 @@ test('用例2：机位在男主东侧正对他——男主中央正面近景', (
   const r = compileShot({ objects, camera: cam })
   // 深度 9.8m、42mm：h ≈ 0.72 → 近景
   assert.equal(r.meta.shotSize, '近景')
-  assert.ok(r.layers.blocking.includes('男主：中央'), r.layers.blocking)
+  assert.ok(r.layers.blocking.includes('男主在画面中央'), r.layers.blocking)
   assert.ok(r.layers.blocking.includes('正面'), r.layers.blocking)
   assert.ok(r.meta.subjectName === '男主')
 })
@@ -153,8 +154,8 @@ test('用例8：9:16 竖幅复测用例1——横向落点按竖幅重算', () =
   const wide = compileShot({ objects: baseline(), camera: camAtDoor })
   const tall = compileShot({ objects: baseline(), camera: { ...camAtDoor, aspectRatio: '9:16' } })
   // 16:9 下男主左侧入画；9:16 水平视场变窄（halfW 18→6.75）→ 男主/奶奶出画
-  assert.ok(wide.layers.blocking.includes('男主：左'), wide.layers.blocking)
-  assert.ok(!tall.layers.blocking.includes('男主：'), tall.layers.blocking)
+  assert.ok(wide.layers.blocking.includes('男主在画面左'), wide.layers.blocking)
+  assert.ok(!tall.layers.blocking.includes('男主在画面'), tall.layers.blocking)
   assert.ok(tall.layers.consistency.includes('男主 在画外'), tall.layers.consistency)
 })
 
@@ -192,4 +193,55 @@ test('inferShotSize 与 compileShot 同源（标签牌共享）', () => {
   const s = inferShotSize(objects, camEastOfLead, 'lead')
   const c = compileShot({ objects, camera: camEastOfLead })
   assert.equal(s.label, c.meta.shotSize)
+})
+
+// ===== §6 运动层与生成版 =====
+import { cameraMotionWord, paceWord, cameraAtFrame, subjectMotionPhrase, poseChangePhrases } from './motion.js'
+
+test('运动规则：固定/推近/拉远/摇镜/横移跟拍/变焦', () => {
+  const track = (a, b) => [
+    { frame: 0, position: a.position, yaw: a.yaw, focalLength: a.focalLength ?? 42 },
+    { frame: 96, position: b.position, yaw: b.yaw, focalLength: b.focalLength ?? 42 },
+  ]
+  const P = (x, z) => [x, 1.6, z]
+  const subject = [0, 0, 0]
+  assert.equal(cameraMotionWord(track({ position: P(0, 5), yaw: 0 }, { position: P(0, 5), yaw: 0 }), subject).word, '固定镜头')
+  assert.equal(cameraMotionWord(track({ position: P(0, 8), yaw: 0 }, { position: P(0, 4), yaw: 0 }), subject).word, '推近')
+  assert.equal(cameraMotionWord(track({ position: P(0, 4), yaw: 0 }, { position: P(0, 8), yaw: 0 }), subject).word, '拉远')
+  assert.equal(cameraMotionWord(track({ position: P(0, 5), yaw: 0 }, { position: P(0, 5), yaw: 0.6 }), subject).word, '左摇')
+  assert.equal(cameraMotionWord(track({ position: P(-4, 5), yaw: 0 }, { position: P(4, 5), yaw: 0 }), subject).word, '右移跟拍')
+  assert.equal(cameraMotionWord(track({ position: P(0, 5), yaw: 0, focalLength: 35 }, { position: P(0, 5), yaw: 0, focalLength: 85 }), subject).word, '变焦推近')
+})
+test('运动规则：节奏词与帧插值', () => {
+  assert.equal(paceWord([{ frame: 0 }, { frame: 24 }], 24), '迅速')
+  assert.equal(paceWord([{ frame: 0 }, { frame: 120 }], 24), '缓慢')
+  assert.equal(paceWord([{ frame: 0 }, { frame: 72 }], 24), '')
+  const mid = cameraAtFrame([
+    { frame: 0, position: [0, 1.6, 8], yaw: 0, focalLength: 42 },
+    { frame: 48, position: [0, 1.6, 4], yaw: 0, focalLength: 42 },
+  ], 24)
+  assert.deepEqual(mid.position, [0, 1.6, 6])
+})
+test('运动层集成：机位推近 + 人物走位 + 时长进入卡片，生成版剔除一致性层', () => {
+  const objects = baseline()
+  const cameraTrack = [
+    { frame: 0, position: [0, 1.6, 6], yaw: 0, focalLength: 42 },
+    { frame: 96, position: [0, 1.6, 2.5], yaw: 0, focalLength: 42 },
+  ]
+  const objectTracks = [{ id: 'lead', name: '男主', points: [
+    { frame: 0, x: -0.8, z: 0.2, poseLabel: '行走' },
+    { frame: 96, x: -0.8, z: -1.8, poseLabel: '自然站立' },
+  ] }]
+  const r = compileShot({ objects, camera: { ...camAtDoor, position: [0, 1.6, 6] }, cameraTrack, objectTracks, fps: 24, durationSeconds: 4, actionLine: '他停下回头' })
+  assert.equal(r.meta.cameraMotion, '推近')
+  assert.ok(r.layers.motion.includes('推近'), r.layers.motion)
+  assert.ok(r.layers.motion.includes('本镜 4 秒'), r.layers.motion)
+  assert.ok(r.layers.motion.includes('男主'), r.layers.motion)
+  assert.ok(r.layers.motion.includes('转为自然站立'), r.layers.motion)
+  // 生成版：含动作句、不含一致性层与占位
+  assert.ok(r.genText.includes('他停下回头'))
+  assert.ok(!r.genText.includes('（待填写）'))
+  assert.ok(!r.genText.includes('轴线'))
+  // 人读全卡仍含一致性层
+  assert.ok(r.text.includes(r.layers.consistency))
 })

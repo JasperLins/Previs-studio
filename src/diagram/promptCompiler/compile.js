@@ -15,6 +15,7 @@ import { cameraBasis, projectPoint, orientationAngleDeg, horizontalDistance } fr
 import { horizontalTier, depthTier, orientationTier, shotSizeTier, distanceWording, gazeRelation } from './mapping.js'
 import { nearestLandmark, landmarkPhrase } from './landmark.js'
 import { axisSide, resolveAxisPair } from '../annotations/data.js'
+import { cameraAtFrame, cameraMotionWord, paceWord, subjectMotionPhrase, poseChangePhrases } from './motion.js'
 
 const PERSON_HEIGHT = 1.7
 
@@ -91,7 +92,9 @@ export function compileShot(input) {
     )
     const anchor = landmarkPhrase(landmark, p.screenX)
     const pose = o.poseLabel || '站立'
-    blockingParts.push(`${o.name}：${h.label}${d.label ? '·' + d.label : ''}·${orient.label || '未知朝向'}·${pose}${anchor ? '，' + anchor : ''}`)
+    // 语句化模板（§6.5，确定性展开）：行走/奔跑类 → 正在X；其余直接用姿势词
+    const poseText = /行|走|跑/.test(pose) ? `正在${pose}` : pose
+    blockingParts.push(`${o.name}在画面${h.label}、${d.label ? d.label + '距离、' : ''}${orient.label || '朝向未知'}朝向镜头，${poseText}${anchor ? `，${anchor}` : ''}`)
   }
 
   // 5) 两人关系（取入画前两人）：相对左右、距离、视线（gazeTargets 优先，任一方有目标即按目标描述）
@@ -149,6 +152,38 @@ export function compileShot(input) {
   }
   if (axisPhrase) consistencyParts.unshift(axisPhrase)
 
+  // 8) 运动层（§6）：录制内容——机位运动 + 人物走位/动作切换 + 时长
+  const cameraTrack = Array.isArray(input?.cameraTrack) ? input.cameraTrack : []
+  const objectTracks = Array.isArray(input?.objectTracks) ? input.objectTracks : []
+  const fps = Number(input?.fps) || 24
+  const durationSeconds = Number(input?.durationSeconds) || 0
+  const subjectXZ = subject ? [objectPosition(subject.object)[0], 0, objectPosition(subject.object)[2]] : null
+  const motion = cameraMotionWord(cameraTrack, subjectXZ)
+  const pace = paceWord(cameraTrack, fps)
+  const motionParts = []
+  motionParts.push(`${pace ? pace : ''}${motion.word}${motion.detail ? `（${motion.detail}）` : ''}`.trim())
+  // 人物走位/动作切换：按轨投影（用对应帧机位插值）
+  const basisOf = cam => ({ basis: cameraBasis(cam), cam })
+  for (const track of objectTracks) {
+    const owner = objects.find(o => o && o.id === track.id)
+    if (!owner || owner.type !== 'person') continue
+    const points = Array.isArray(track.points) ? track.points : []
+    const projectAt = frame => {
+      const cam = cameraAtFrame(cameraTrack.length ? cameraTrack : [{ frame: 0, position: camera.position, yaw: (camera.rotation || [])[1] || 0, focalLength: camera.focalLength }], frame)
+      if (!cam) return null
+      const { basis } = basisOf({ position: cam.position, rotation: [0, cam.yaw || 0, 0], focalLength: cam.focalLength || camera.focalLength, aspectRatio: camera.aspectRatio })
+      const kf = points.filter(p => p.frame <= frame).pop() || points[0]
+      if (!kf) return null
+      const p = projectPoint(basis, { position: cam.position }, cam.focalLength || camera.focalLength, camera.aspectRatio, [kf.x, 0, kf.z], 1.7)
+      return p.inFrame || p.screenX !== null ? p.screenX : null
+    }
+    const move = subjectMotionPhrase(points, fps, projectAt)
+    if (move) motionParts.push(`${owner.name}${move}`)
+    for (const phrase of poseChangePhrases(points, fps)) motionParts.push(`${owner.name}${phrase}`)
+  }
+  if (durationSeconds > 0) motionParts.push(`本镜 ${Math.round(durationSeconds)} 秒`)
+  const motionLayer = motionParts.join('，')
+
   const layers = {
     framing: [
       shotSize.label ? `${shotSize.label}` : '景别待定',
@@ -156,6 +191,7 @@ export function compileShot(input) {
       `朝${subject ? subject.object.name : '场景'}拍摄`,
       `${aspectText(camera.aspectRatio)}画幅`,
     ].join('，'),
+    motion: motionLayer,
     blocking: [blockingParts.join('；'), relationText].filter(Boolean).join('；') || '画面中无入画人物',
     scene: sceneItems.length ? sceneItems.join('、') : '（无入画布景）',
     action: actionLine || '（待填写）',
@@ -163,21 +199,32 @@ export function compileShot(input) {
   }
   const text = [
     `${layers.framing}。`,
+    layers.motion ? `${layers.motion}。` : '',
     `${layers.blocking}。`,
     `${layers.scene}。`,
     layers.action,
     layers.consistency,
   ].filter(s => s && s !== '').join('\n')
+  // 生成版（§6.4）：取景 + 运动 + 站位 + 场景 + 动作（剔一致性层与占位行），供直接粘贴视频提示词
+  const genText = [
+    `${layers.framing}。`,
+    layers.motion ? `${layers.motion}。` : '',
+    `${layers.blocking}。`,
+    `${layers.scene}。`,
+    actionLine || '',
+  ].filter(s => s && s.trim() !== '').join('\n')
 
   return {
     layers,
     text,
+    genText,
     meta: {
       shotSize: shotSize.label,
       subjectName: subject ? subject.object.name : null,
       inFrameCount: projections.filter(p => p.inFrame).length,
       subjectScreenX: subject ? subject.screenX : null,
       subjectDistance,
+      cameraMotion: motion.word,
     },
   }
 }

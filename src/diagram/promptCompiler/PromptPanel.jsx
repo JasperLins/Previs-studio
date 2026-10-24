@@ -16,7 +16,7 @@ function copyText(text) {
   })
 }
 
-export function PromptPanel({ layers, text, actionLine, onActionChange, shotName, projectName, onToast }) {
+export function PromptPanel({ layers, text, genText = '', actionLine, onActionChange, shotName, projectName, onToast }) {
   const [toastLocal, setToastLocal] = useState('')
   const fileName = useMemo(() => {
     const safe = value => String(value || '').replace(/[\\/:*?"<>|]+/g, '-').trim()
@@ -30,6 +30,13 @@ export function PromptPanel({ layers, text, actionLine, onActionChange, shotName
       setTimeout(() => setToastLocal(''), 1600)
     })
   }
+  const handleCopyGen = () => {
+    copyText(genText || text).then(() => {
+      setToastLocal('已复制生成版')
+      onToast?.('生成版提示词已复制（不含一致性层）')
+      setTimeout(() => setToastLocal(''), 1600)
+    })
+  }
   const handleExport = () => {
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
     const link = document.createElement('a')
@@ -40,13 +47,14 @@ export function PromptPanel({ layers, text, actionLine, onActionChange, shotName
     onToast?.(`已导出 ${fileName}`)
   }
 
-  const LAYER_TITLES = [['framing', '取景'], ['blocking', '人物站位'], ['scene', '场景'], ['action', '动作层'], ['consistency', '一致性']]
+  const LAYER_TITLES = [['framing', '取景'], ['motion', '镜头运动'], ['blocking', '人物站位'], ['scene', '场景'], ['action', '动作层'], ['consistency', '一致性']]
 
   return (
     <div className="dg-prompt-panel">
       <div className="dg-prompt-head">
         <strong>机位词 · {shotName || '当前镜'}</strong>
         <div className="dg-prompt-actions">
+          <button type="button" className="is-primary" onClick={handleCopyGen}>复制生成版</button>
           <button type="button" onClick={handleCopy}>复制全文</button>
           <button type="button" onClick={handleExport}>导出 TXT</button>
         </div>

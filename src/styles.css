@@ -542,3 +542,5 @@ button:disabled { opacity: .28; cursor: not-allowed !important; }
 .dg-prompt-card > span { display: block; font-size: 9px; letter-spacing: .1em; color: #8f897c; margin-bottom: 4px; }
 .dg-prompt-card pre { margin: 0; white-space: pre-wrap; font-family: inherit; font-size: 11px; line-height: 1.6; color: #eceade; }
 .dg-prompt-toast { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); padding: 4px 12px; border-radius: 4px; background: #22c55e; color: #fff; font-size: 11px; pointer-events: none; }
+
+.dg-prompt-actions button.is-primary { border-color: #22c55e; color: #22c55e; }

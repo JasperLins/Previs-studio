@@ -1391,8 +1391,15 @@ export default function App() {
       diagram,
       prevSummary,
       actionLine: diagram.promptDrafts?.[activeShotId]?.actionLine || '',
+      cameraTrack: (keyframes || []).map(key => ({ frame: key.frame, position: key.position, yaw: (key.rotation || [])[1] || 0, focalLength: key.focalLength })),
+      objectTracks: Object.entries(characterKeyframes || {}).map(([id, track]) => ({
+        id,
+        points: (Array.isArray(track) ? track : []).map(key => ({ frame: key.frame, x: key.position?.[0], z: key.position?.[2], poseLabel: poseLabel(key.pose) })),
+      })),
+      fps,
+      durationSeconds: settings.durationSeconds,
     })
-  }, [activeShotId, diagram, displayCamera, promptObjects, shots])
+  }, [activeShotId, characterKeyframes, diagram, displayCamera, fps, keyframes, promptObjects, settings.durationSeconds, shots])
   const [promptTabOpen, setPromptTabOpen] = useState(false)
 
   const cameraGizmo = useMemo(() => {
@@ -2339,6 +2346,7 @@ export default function App() {
             <PromptPanel
               layers={promptResult.layers}
               text={promptResult.text}
+              genText={promptResult.genText}
               actionLine={diagram.promptDrafts?.[activeShotId]?.actionLine || ''}
               onActionChange={value => setDiagram(prev => patchDiagram(prev, { promptDrafts: { [activeShotId]: { actionLine: value } } }))}
               shotName={shots.find(shot => shot.id === activeShotId)?.name}
