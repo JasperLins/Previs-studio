@@ -140,3 +140,25 @@ annotations/data.js（侧别/越线/幽灵/解析/路径，21 测）+ Annotation
 ### Status
 
 [OK] **Completed**
+
+
+## Session 7: T06 提示词编译器与机位词面板
+
+**Date**: 2026-10-24
+**Task**: T06 提示词编译器与机位词面板
+**Branch**: `class`
+
+### Summary
+
+promptCompiler 四模块（映射档位/纯投影含 36×24 画幅裁切与高对象任一部入画语义/地标防编造/五层管线+轴线侧别+上镜差异）+ 18 例单测（§4 十用例全过）；接缝 S4 右侧页签 + PromptPanel（动作层持久化/复制/导出 TXT/描述卡）；标签牌景别与编译器同源实测一致。全程主会话内联（quota），浏览器验收过。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `97fb645` | (see git log) |
+| `b945a49` | (see git log) |
+
+### Status
+
+[OK] **Completed**
