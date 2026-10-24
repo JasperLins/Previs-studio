@@ -136,7 +136,7 @@ test('setObjectPlane：对象不存在时不调用 updateObject', () => {
   assert.equal(objectUpdates.length, 0)
 })
 
-test('patchDiagram：浅合并顶层键，layers 键级合并，其它键不动', () => {
+test('patchDiagram：浅合并顶层键，layers/shotMeta/promptDrafts 键级合并，其它键不动', () => {
   const diagram = {
     axisPair: ['a', 'b'],
     gazeTargets: { a: { objectId: 'x' } },
@@ -159,7 +159,7 @@ test('patchDiagram：浅合并顶层键，layers 键级合并，其它键不动'
   assert.equal(state.diagram.layers.axis, false, 'layers 键级合并：axis 被更新')
   assert.equal(state.diagram.layers.labels, true, 'layers 键级合并：未提及键保留默认')
   assert.deepEqual(state.diagram.shotMeta, { s1: { camLetter: 'A' } }, '未提及的顶层键不动')
-  assert.deepEqual(state.diagram.promptDrafts, { s2: { actionLine: '入画' } }, '顶层键浅合并：提及即整体替换（仅 layers 键级合并）')
+  assert.deepEqual(state.diagram.promptDrafts, { s1: { actionLine: '走' }, s2: { actionLine: '入画' } }, 'promptDrafts 键级合并：单镜补丁不清掉他镜草稿')
 })
 
 test('patchDiagram：空 patch / 非 object patch 不触发 updateDiagram', () => {

@@ -52,7 +52,7 @@ export function compileShot(input) {
   // 1) 全对象投影
   const projections = objects.map(object => {
     const pos = objectPosition(object)
-    const p = projectPoint(basis, camera, camera.focalLength, camera.aspectRatio, pos, objectHeight(object), 0)
+    const p = projectPoint(basis, camera, camera.focalLength, camera.aspectRatio, pos, objectHeight(object))
     return {
       object, pos,
       inFrame: p.inFrame,
@@ -88,7 +88,6 @@ export function compileShot(input) {
       projections
         .filter(x => x.object.type !== 'person' && x.object.id !== o.id && Number.isFinite(x.screenX))
         .map(x => ({ name: x.object.name, screenX: x.screenX, distance: horizontalDistance(objectPosition(o), objectPosition(x.object)) })),
-      o.name,
     )
     const anchor = landmarkPhrase(landmark, p.screenX)
     const pose = o.poseLabel || '站立'
@@ -173,20 +172,27 @@ export function compileShot(input) {
   const pace = paceWord(cameraTrack, fps)
   const motionParts = []
   motionParts.push(`${pace ? pace : ''}${motion.word}${motion.detail ? `（${motion.detail}）` : ''}`.trim())
-  // 人物走位/动作切换：按轨投影（用对应帧机位插值）
-  const basisOf = cam => ({ basis: cameraBasis(cam), cam })
+  // 人物走位/动作切换：按轨投影（用对应帧机位插值）。轨点按帧升序排一次，
+  // 供 projectAt 的「≤frame 最新点」取值（入参序不保证有序，同 motion.js 各函数口径）。
   for (const track of objectTracks) {
     const owner = objects.find(o => o && o.id === track.id)
     if (!owner || owner.type !== 'person') continue
-    const points = Array.isArray(track.points) ? track.points : []
+    const points = (Array.isArray(track.points) ? track.points : [])
+      .filter(p => p && Number.isFinite(p.frame))
+      .slice()
+      .sort((a, b) => a.frame - b.frame)
+    // 无机位轨时以当前机位为全程定机（单元素轨 = cameraAtFrame 恒返回该机位）
+    const effectiveCameraTrack = cameraTrack.length ? cameraTrack : [
+      { frame: 0, position: camera.position, yaw: (camera.rotation || [])[1] || 0, focalLength: camera.focalLength },
+    ]
     const projectAt = frame => {
-      const cam = cameraAtFrame(cameraTrack.length ? cameraTrack : [{ frame: 0, position: camera.position, yaw: (camera.rotation || [])[1] || 0, focalLength: camera.focalLength }], frame)
+      const cam = cameraAtFrame(effectiveCameraTrack, frame)
       if (!cam) return null
-      const { basis } = basisOf({ position: cam.position, rotation: [0, cam.yaw || 0, 0], focalLength: cam.focalLength || camera.focalLength, aspectRatio: camera.aspectRatio })
+      const basis = cameraBasis({ rotation: [0, cam.yaw || 0, 0] })
       const kf = points.filter(p => p.frame <= frame).pop() || points[0]
       if (!kf) return null
-      const p = projectPoint(basis, { position: cam.position }, cam.focalLength || camera.focalLength, camera.aspectRatio, [kf.x, 0, kf.z], 1.7)
-      return p.inFrame || p.screenX !== null ? p.screenX : null
+      const p = projectPoint(basis, { position: cam.position }, cam.focalLength || camera.focalLength, camera.aspectRatio, [kf.x, 0, kf.z], PERSON_HEIGHT)
+      return p.screenX // 机后（不可投影）时 projection 已返回 null
     }
     const move = subjectMotionPhrase(points, fps, projectAt)
     if (move) motionParts.push(`${owner.name}${move}`)
@@ -195,13 +201,21 @@ export function compileShot(input) {
   if (durationSeconds > 0) motionParts.push(`本镜 ${Math.round(durationSeconds)} 秒`)
   const motionLayer = motionParts.join('，')
 
+  // 机位锚点（§3 模板：机位 1.5m 内最近地标——非人物、按真实水平距离；无则省略此短语）
+  const cameraAnchor = nearestLandmark(
+    projections
+      .filter(x => x.object.type !== 'person')
+      .map(x => ({ name: x.object.name, screenX: null, distance: horizontalDistance([Number(camPos[0]) || 0, 0, Number(camPos[2]) || 0], objectPosition(x.object)) })),
+  )
+
   const layers = {
     framing: [
       shotSize.label ? `${shotSize.label}` : '景别待定',
       `${Math.round(Number(camera.focalLength) || 42)}mm`,
+      cameraAnchor ? `镜头在${cameraAnchor.name}旁` : '',
       `朝${subject ? subject.object.name : '场景'}拍摄`,
       `${aspectText(camera.aspectRatio)}画幅`,
-    ].join('，'),
+    ].filter(Boolean).join('，'),
     motion: motionLayer,
     blocking: [blockingParts.join('；'), relationText].filter(Boolean).join('；') || '画面中无入画人物',
     scene: sceneItems.length ? sceneItems.join('、') : '（无入画布景）',

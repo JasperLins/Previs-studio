@@ -98,14 +98,22 @@ export function normalizeDiagram(raw) {
   return result
 }
 
-// diagram 局部补丁：浅合并顶层键 + layers 键级合并，垃圾值由 normalizeDiagram 回退。
+// diagram 局部补丁：浅合并顶层键；layers/shotMeta/promptDrafts 键级合并（后三者按
+// 图层名/shotId 分键——单镜补丁不得冲掉他镜数据），垃圾值由 normalizeDiagram 回退。
+// 注意：键级合并不提供「删除某键」语义（如需整表替换走 setDiagram + normalizeDiagram）。
 // stateAdapter.patchDiagram（T01）与 App 顶视网格开关（T02）共用的唯一合并入口。
 export function patchDiagram(prev, patch) {
   const base = prev && typeof prev === 'object' ? prev : {}
   if (!isPlainObject(patch)) return normalizeDiagram(base)
+  const keyMerge = key => ({
+    ...(isPlainObject(base[key]) ? base[key] : {}),
+    ...(isPlainObject(patch[key]) ? patch[key] : {}),
+  })
   return normalizeDiagram({
     ...base,
     ...patch,
-    layers: { ...(isPlainObject(base.layers) ? base.layers : {}), ...(patch.layers || {}) },
+    layers: keyMerge('layers'),
+    shotMeta: keyMerge('shotMeta'),
+    promptDrafts: keyMerge('promptDrafts'),
   })
 }

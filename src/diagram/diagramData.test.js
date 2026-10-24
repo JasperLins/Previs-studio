@@ -163,7 +163,7 @@ test('不与输入共享引用（写入结果不影响 raw）', () => {
   assert.equal(raw.layers.grid, false)
 })
 
-test('patchDiagram：layers 键级合并（未提键保留），其余顶层键浅合并', () => {
+test('patchDiagram：layers/shotMeta/promptDrafts 键级合并（未提键保留），其余顶层键浅合并', () => {
   const prev = normalizeDiagram({ layers: { grid: false } })
   const next = patchDiagram(prev, { layers: { ghosts: false } })
   assert.equal(next.layers.grid, false)
@@ -172,6 +172,23 @@ test('patchDiagram：layers 键级合并（未提键保留），其余顶层键�
   assert.deepEqual(next.axisPair, null)
   assert.notEqual(next, prev)
   assert.notEqual(next.layers, prev.layers)
+})
+
+test('patchDiagram：promptDrafts 单镜补丁不清掉他镜草稿（机位词面板逐字写入路径）', () => {
+  const prev = normalizeDiagram({ promptDrafts: { 'shot-01': { actionLine: '走向门口' } } })
+  const next = patchDiagram(prev, { promptDrafts: { 'shot-02': { actionLine: '转身' } } })
+  assert.deepEqual(next.promptDrafts['shot-01'], { actionLine: '走向门口' }, '他镜草稿必须保留')
+  assert.deepEqual(next.promptDrafts['shot-02'], { actionLine: '转身' })
+  // 同镜覆写生效
+  const again = patchDiagram(next, { promptDrafts: { 'shot-02': { actionLine: '转身停留' } } })
+  assert.deepEqual(again.promptDrafts['shot-02'], { actionLine: '转身停留' })
+})
+
+test('patchDiagram：shotMeta 单镜补丁键级合并', () => {
+  const prev = normalizeDiagram({ shotMeta: { 'shot-01': { camLetter: 'A' } } })
+  const next = patchDiagram(prev, { shotMeta: { 'shot-02': { shotSizeOverride: '全景' } } })
+  assert.deepEqual(next.shotMeta['shot-01'], { camLetter: 'A' })
+  assert.deepEqual(next.shotMeta['shot-02'], { shotSizeOverride: '全景' })
 })
 
 test('patchDiagram：prev 非法时按默认打底，patch 非法时回退 prev 的规范化形态', () => {

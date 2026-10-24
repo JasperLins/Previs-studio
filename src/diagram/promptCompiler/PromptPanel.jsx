@@ -1,7 +1,7 @@
 // 「机位词」面板（T06 接缝 S4 的 UI 本体）。纯展示 + 动作层输入：
 // 五层分层展示 + 镜头描述卡 + 复制全文 + 导出 TXT + 动作层草稿（经 onActionChange 持久化到 diagram.promptDrafts）。
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 function copyText(text) {
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text)
@@ -18,6 +18,13 @@ function copyText(text) {
 
 export function PromptPanel({ layers, text, genText = '', actionLine, onActionChange, shotName, projectName, onToast }) {
   const [toastLocal, setToastLocal] = useState('')
+  const toastTimerRef = useRef(null)
+  useEffect(() => () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }, [])
+  const flashToast = message => {
+    setToastLocal(message)
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = setTimeout(() => setToastLocal(''), 1600)
+  }
   const fileName = useMemo(() => {
     const safe = value => String(value || '').replace(/[\\/:*?"<>|]+/g, '-').trim()
     return `${safe(projectName) || '工程'}_${safe(shotName) || '镜头'}_机位词.txt`
@@ -25,16 +32,14 @@ export function PromptPanel({ layers, text, genText = '', actionLine, onActionCh
 
   const handleCopy = () => {
     copyText(text).then(() => {
-      setToastLocal('已复制全文')
+      flashToast('已复制全文')
       onToast?.('机位词已复制到剪贴板')
-      setTimeout(() => setToastLocal(''), 1600)
     })
   }
   const handleCopyGen = () => {
     copyText(genText || text).then(() => {
-      setToastLocal('已复制生成版')
+      flashToast('已复制生成版')
       onToast?.('生成版提示词已复制（不含一致性层）')
-      setTimeout(() => setToastLocal(''), 1600)
     })
   }
   const handleExport = () => {

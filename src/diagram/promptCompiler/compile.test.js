@@ -261,3 +261,25 @@ test('运动规则：跟拍时推拉判定配对主体轨首末位置（主体�
   ]
   assert.equal(cameraMotionWord(track2, [4, 0.2], [0, 0.2]).word, '左移跟拍')
 })
+
+test('机位锚点：机位 1.5m 内最近非人物地标进取景层，无则省略该短语（§3 模板）', () => {
+  const atDoor = compileShot({ objects: baseline(), camera: camAtDoor })
+  assert.ok(atDoor.layers.framing.includes('镜头在门旁'), atDoor.layers.framing)  // 门(0,3) 与机位(0,3) 距离 0
+  const inOpen = compileShot({ objects: baseline(), camera: camEastOfLead })     // 最近非人物（桌）≈6.4m
+  assert.ok(!inOpen.layers.framing.includes('镜头在'), inOpen.layers.framing)
+})
+
+test('运动层：人物轨点乱序输入与按帧升序输入编译结果一致（projectAt 取 ≤frame 最新点）', () => {
+  const camera = { ...camAtDoor, position: [0, 1.6, 6] }
+  const mkPoints = entries => entries.map(([frame, x]) => ({ frame, x, z: 0.2, poseLabel: '行走' }))
+  const sorted = compileShot({
+    objects: baseline(), camera, fps: 24, durationSeconds: 4,
+    objectTracks: [{ id: 'lead', name: '男主', points: mkPoints([[0, -2], [48, 0], [96, 2]]) }],
+  })
+  const shuffled = compileShot({
+    objects: baseline(), camera, fps: 24, durationSeconds: 4,
+    objectTracks: [{ id: 'lead', name: '男主', points: mkPoints([[96, 2], [0, -2], [48, 0]]) }],
+  })
+  assert.deepEqual(shuffled, sorted)
+  assert.ok(sorted.layers.motion.includes('男主'), sorted.layers.motion)
+})
