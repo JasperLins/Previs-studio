@@ -1,1 +1,4 @@
 {"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `python .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/diagram-symbols.md", "reason": "机位节符号规格：尺寸/配色/标签牌/透明度"}
+{"file": ".trellis/spec/product-spec.md", "reason": "§2 视锥角度与锥长规则、§3 shotMeta 契约"}
+{"file": ".trellis/spec/fork-discipline.md", "reason": "接缝纪律与纯函数资产要求"}
