@@ -43,8 +43,10 @@ React 19 + Vite 8 + Three.js 0.170 + @react-three/fiber 9 + @react-three/drei 10
 | S3 | Viewport.jsx | EditorScene 挂载区挂载 diagram 层组件：首个挂载件 = TopViewControls / TopViewGrid（顶视相机控制与米制网格/图纸底），顶视时屏蔽上游背景色/雾/编辑相机回写；后续 Gizmo 层与符号替换层（T03+，传 objects/camera/selectedId 引用）在同一挂载区追加。T04 追加：①顶视下 `SceneObject` 的 `hideModel` 派生（`planeLock && (type∈SWAP_TYPES \|\| isThinWall(scale))`，包住 content group 的 visible 隐藏原模型，TransformControls 仍挂原 group、拖拽路径不变）；②符号层可点选（SymbolLayer 符号 mesh raycast 命中 → stopPropagation → 透传既有 onSelect，被隐藏模型的选取由符号接管）；符号层同样仅挂 EditorScene（结构性不进 PNG/MP4 导出）。T05 追加：①顶部 import `AnnotationLayer`（src/diagram/annotations/）；②`EditorScene` 签名末加 `annotations` 参数、`CameraGizmo` 挂载行加 `warned` 透传、`SymbolLayer` 行后一行挂 `<AnnotationLayer>`（!cameraView 且有数据时渲染：轴线/视线/路径/幽灵机位，只读组件，数据为 App 侧经 `stateAdapter.buildAnnotations` 组装的中性 annotationData——keyframes 等上游形状止于适配层）。配套 App.jsx 侧（同属 S3 范围）：imports（annotations/data.js 纯函数 + stateAdapter.buildAnnotations）、annotationData/axisWarn useMemo（越轴翻转记忆 ref）、cameraGizmo 加 warned 字段、MainViewport 行加 annotations prop 与锁定画布生效值（transformMode 三元 + selectedId/onSelect 只读化）、viewport-canvas-layer 内越轴警告横幅 DOM（dg-axis-warning，不进画布）、TopViewOverlay 图层面板 props（diagram/objects/onPatchDiagram/canvasLocked/onToggleLock） | 标注与符号 |
 | S4 | App.jsx | 右侧面板加页签「机位词」（P2） | 提示词面板 |
 | S5 | App.jsx | 工程 normalize/保存逻辑透传 `diagram` 扩展字段 | 数据兼容 |
+| S6 | App.jsx | `SceneList` 行内双击重命名编辑态；`LeftSidebar` 透传 onRenameObject；App 侧 `renameObject`/`syncObjectNameToShots`（名称按 object.id 扇出到全部镜头 shot.objects 快照，机位词跨镜头同步）；Inspector 名称输入框提交时同样扇出（maxLength 30、空值回退） | 层级重命名 + 名称跨镜头同步 |
+| S7 | App.jsx | `AxisSlider` 与焦距/动作相位 `range-field` 的只读 `<output>` 换为 `SliderNumberInput`（新文件 src/SliderNumberInput.jsx + 纯函数 src/sliderNumber.js 含单测）；非法/超轨道范围输入还原，合法值对齐 step 网格 | 滑块数值手动输入 |
 
-原则：接缝只做「挂载与传参」，任何业务逻辑写在 `src/diagram/` 内。
+原则：接缝只做「挂载与传参」，任何业务逻辑写在 `src/diagram/` 内。S6/S7 为通用 UI 功能（非 diagram 业务）：可复用控件与纯函数放独立新文件（零上游冲突），App.jsx 内只留挂载、传参与名称扇出这类无法外移的状态接线。
 
 ## 已知限制（设计时已绕开，勿重复发现）
 

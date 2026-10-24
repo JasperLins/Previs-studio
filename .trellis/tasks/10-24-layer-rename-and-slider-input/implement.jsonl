@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/fork-discipline.md", "reason": "上游文件改动纪律：只许接缝内改动、接缝先登记 PATCHES.md、styles.css 只许末尾追加 dg- 前缀类、逻辑放新文件"}
+{"file": ".trellis/spec/base-audit.md", "reason": "基座文件地图与接缝表（S1-S5）；本任务新增 S6/S7 接缝"}
+{"file": ".trellis/spec/prompt-compiler.md", "reason": "机位词是纯函数实时派生（object.name 直接插值），改名同步的语义依据"}

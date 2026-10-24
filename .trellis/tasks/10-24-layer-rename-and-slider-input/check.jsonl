@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/fork-discipline.md", "reason": "验收时核对：接缝已登记、styles.css 仅追加 dg- 类、无接缝外上游改动"}
+{"file": ".trellis/spec/base-audit.md", "reason": "核对 S6/S7 接缝落点与台账一致"}

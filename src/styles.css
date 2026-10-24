@@ -544,3 +544,10 @@ button:disabled { opacity: .28; cursor: not-allowed !important; }
 .dg-prompt-toast { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); padding: 4px 12px; border-radius: 4px; background: #22c55e; color: #fff; font-size: 11px; pointer-events: none; }
 
 .dg-prompt-actions button.is-primary { border-color: #22c55e; color: #22c55e; }
+
+/* ===== S6/S7 层级就地重命名 + 滑块数值手动输入（dg- 前缀，追加区，不改上方任何规则） ===== */
+.dg-scene-rename-input { width: 100%; min-width: 0; box-sizing: border-box; height: 20px; padding: 0 5px; border: 1px solid #6b6455; border-radius: 4px; background: rgba(255,255,255,.08); color: #e8e4d9; font-size: 11px; outline: none; }
+.dg-scene-rename-input:focus { border-color: var(--accent); background: #1d1d1c; }
+.dg-slider-number-input { width: 100%; min-width: 0; box-sizing: border-box; height: 16px; padding: 0 2px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--text-dim); font-family: "Cascadia Mono", monospace; font-size: 8px; line-height: 1; text-align: right; outline: none; }
+.dg-slider-number-input:focus { border-color: var(--axis-color, #8a8578); background: rgba(255,255,255,.06); }
+.dg-slider-number-input:disabled { opacity: .45; cursor: not-allowed; }

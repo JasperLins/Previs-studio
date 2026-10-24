@@ -19,6 +19,7 @@ import { compileShot } from './diagram/promptCompiler/compile.js'
 import { PromptPanel } from './diagram/promptCompiler/PromptPanel.jsx'
 import { buildShotDiagramSvg } from './diagram/exportDiagram/svg.js'
 import { svgToPngBlob } from './diagram/exportDiagram/raster.js'
+import { SliderNumberInput } from './SliderNumberInput.jsx'
 
 const CAMERA_ID = '__shot_camera__'
 const PROJECT_STORAGE_KEY = 'monoform-project'
@@ -608,7 +609,7 @@ function AxisSlider({ label, title, value, onChange, accent, min, max, step, uni
     <div className={`axis-slider ${onToggleLock ? 'has-axis-lock' : ''} ${locked ? 'is-axis-locked' : ''}`} style={{ '--axis-color': accent }}>
       <span>{label}</span>
       <input aria-label={`${title} ${label}`} type="range" min={safeMin} max={safeMax} step={step} value={numericValue} onChange={event => onChange(Number(event.target.value))} disabled={disabled || locked} />
-      <output>{numericValue.toFixed(digits)}{unit}</output>
+      <SliderNumberInput ariaLabel={`${title} ${label} 数值`} value={numericValue} min={safeMin} max={safeMax} step={step} digits={digits} unit={unit} disabled={disabled || locked} onChange={onChange} />
       {onToggleLock && <button type="button" className="axis-lock-button" aria-label={`${locked ? '解除' : '锁定'}缩放 ${label} 轴`} aria-pressed={locked} title={`${locked ? '解除' : '锁定'} ${label} 轴缩放`} onClick={onToggleLock}>{locked ? <Lock size={10} /> : <Unlock size={10} />}</button>}
     </div>
   )
@@ -656,7 +657,11 @@ function AssetCard({ icon: Icon, title, subtitle, onClick, previewClass = '' }) 
   )
 }
 
-function SceneList({ objects, selectedId, onSelect, onToggleVisible, onToggleLock }) {
+function SceneList({ objects, selectedId, onSelect, onToggleVisible, onToggleLock, onRename }) {
+  const [editingId, setEditingId] = useState(null)
+  const [draftName, setDraftName] = useState('')
+  // Esc 与 blur 会连续触发：置位后 blur 分支据此跳过提交，直接还原原名
+  const cancelRef = useRef(false)
   return (
     <div className="scene-list">
       <div className={`scene-row ${selectedId === CAMERA_ID ? 'is-selected' : ''}`} onClick={() => onSelect(CAMERA_ID)}>
@@ -665,7 +670,31 @@ function SceneList({ objects, selectedId, onSelect, onToggleVisible, onToggleLoc
       {objects.map(object => (
         <div key={object.id} className={`scene-row ${selectedId === object.id ? 'is-selected' : ''}`} onClick={() => onSelect(object.id)}>
           {object.type === 'person' ? <UserRound size={14} /> : object.type === 'model' ? <Sparkles size={14} /> : object.type === 'depthMesh' ? <ScanLine size={14} /> : <Box size={14} />}
-          <span>{object.name}</span>
+          {editingId === object.id ? (
+            <input
+              className="dg-scene-rename-input"
+              value={draftName}
+              maxLength="30"
+              autoFocus
+              aria-label={`${object.name} 重命名`}
+              onFocus={event => event.target.select()}
+              onClick={event => event.stopPropagation()}
+              onDoubleClick={event => event.stopPropagation()}
+              onChange={event => setDraftName(event.target.value)}
+              onKeyDown={event => {
+                if (event.key === 'Enter') event.currentTarget.blur()
+                else if (event.key === 'Escape') { cancelRef.current = true; event.currentTarget.blur() }
+              }}
+              onBlur={() => {
+                if (cancelRef.current) { cancelRef.current = false; setEditingId(null); return }
+                const trimmed = draftName.trim()
+                if (trimmed && trimmed !== object.name) onRename(object.id, trimmed)
+                setEditingId(null)
+              }}
+            />
+          ) : (
+            <span onDoubleClick={() => { setEditingId(object.id); setDraftName(object.name || '') }}>{object.name}</span>
+          )}
           <button className="scene-row-action" title={object.locked ? '解除锁定' : '锁定物体'} onClick={event => { event.stopPropagation(); onToggleLock(object.id) }}>{object.locked ? <Lock size={11} /> : <Unlock size={11} />}</button>
           <button className="scene-row-action visibility-action" title={object.visible === false ? '显示物体' : '隐藏物体'} onClick={event => { event.stopPropagation(); onToggleVisible(object.id) }}><i className={`status-dot ${object.visible === false ? '' : 'on'}`} /></button>
         </div>
@@ -674,7 +703,7 @@ function SceneList({ objects, selectedId, onSelect, onToggleVisible, onToggleLoc
   )
 }
 
-function LeftSidebar({ objects, selectedId, onSelect, onAddPerson, onAddPrimitive, onImport, onToggleVisible, onToggleLock, shots, activeShotId, onSelectShot, onAddShot, onDuplicateShot, onDeleteShot, onRenameShot, onCaptureShot }) {
+function LeftSidebar({ objects, selectedId, onSelect, onAddPerson, onAddPrimitive, onImport, onToggleVisible, onToggleLock, onRenameObject, shots, activeShotId, onSelectShot, onAddShot, onDuplicateShot, onDeleteShot, onRenameShot, onCaptureShot }) {
   const [tab, setTab] = useState('assets')
   const inputRef = useRef(null)
   return (
@@ -712,13 +741,14 @@ function LeftSidebar({ objects, selectedId, onSelect, onAddPerson, onAddPrimitiv
           <input ref={inputRef} className="visually-hidden" type="file" accept=".glb,.gltf" onChange={onImport} />
         </div>
       ) : tab === 'scene' ? (
-        <SceneList objects={objects} selectedId={selectedId} onSelect={onSelect} onToggleVisible={onToggleVisible} onToggleLock={onToggleLock} />
+        <SceneList objects={objects} selectedId={selectedId} onSelect={onSelect} onToggleVisible={onToggleVisible} onToggleLock={onToggleLock} onRename={onRenameObject} />
       ) : <ShotsPanel shots={shots} activeShotId={activeShotId} onSelect={onSelectShot} onAdd={onAddShot} onDuplicate={onDuplicateShot} onDelete={onDeleteShot} onRename={onRenameShot} onCapture={onCaptureShot} />}
     </aside>
   )
 }
 
-function Inspector({ selected, camera, selectedJoint, customPoses, onSelectJoint, onUpdateObject, onUpdateCamera, onDelete, onDuplicate, onFocus, onToggleLock, onGround, onResetRotation, onResetScale, onSaveCustomPose, onApplyCustomPose, onDeleteCustomPose }) {
+function Inspector({ selected, camera, selectedJoint, customPoses, onSelectJoint, onUpdateObject, onUpdateCamera, onDelete, onDuplicate, onFocus, onToggleLock, onGround, onResetRotation, onResetScale, onSaveCustomPose, onApplyCustomPose, onDeleteCustomPose, onCommitName }) {
+  const nameBeforeEditRef = useRef('')
   if (!selected) {
     return <aside className="right-sidebar panel empty-inspector"><MousePointer2 size={24} /><span>选择场景中的物体</span></aside>
   }
@@ -727,6 +757,7 @@ function Inspector({ selected, camera, selectedJoint, customPoses, onSelectJoint
   const typeLabel = selected.type === 'depthMesh' ? 'DEPTH SPACE' : selected.type?.toUpperCase()
   const rigPose = selected.type === 'person' ? poseForObject(selected) : null
   const canLoopPose = selected.type === 'person' && poseCanLoop(selected.pose)
+  const phaseValue = Number.isFinite(selected.poseTime) ? selected.poseTime : presetPhase(selected.pose)
   const jointRotation = rigPose?.joints[selectedJoint] || [0, 0, 0]
   const updateJoint = rotation => onUpdateObject({
     joints: { ...rigPose.joints, [selectedJoint]: rotation },
@@ -741,7 +772,7 @@ function Inspector({ selected, camera, selectedJoint, customPoses, onSelectJoint
   return (
     <aside className="right-sidebar panel">
       <div className="inspector-head">
-        <div><small>{isCamera ? 'CAMERA' : typeLabel}</small>{isCamera ? <strong>主摄像机</strong> : <input className="inspector-name-input" value={selected.name} onChange={event => onUpdateObject({ name: event.target.value })} aria-label="物体名称" />}</div>
+        <div><small>{isCamera ? 'CAMERA' : typeLabel}</small>{isCamera ? <strong>主摄像机</strong> : <input className="inspector-name-input" value={selected.name} maxLength="30" aria-label="物体名称" onFocus={() => { nameBeforeEditRef.current = selected.name }} onChange={event => onUpdateObject({ name: event.target.value })} onBlur={event => { const trimmed = event.target.value.trim(); if (trimmed && trimmed !== nameBeforeEditRef.current) onCommitName(selected.id, trimmed); else if (!trimmed) onUpdateObject({ name: nameBeforeEditRef.current }) }} onKeyDown={event => { if (event.key === 'Enter') event.currentTarget.blur() }} />}</div>
         <div className="inspector-head-actions">
           <ToolButton icon={Focus} label="视图聚焦" onClick={onFocus} />
           {!isCamera && <ToolButton icon={selected.locked ? Unlock : Lock} label={selected.locked ? '解除锁定' : '锁定'} onClick={onToggleLock} />}
@@ -781,7 +812,7 @@ function Inspector({ selected, camera, selectedJoint, customPoses, onSelectJoint
         {isCamera ? (
           <div className="inspector-section">
             <div className="section-title"><span>镜头</span><ChevronDown size={14} /></div>
-            <label className="range-field"><span>焦距</span><input type="range" min="18" max="120" value={camera.focalLength} onChange={e => onUpdateCamera({ focalLength: Number(e.target.value) })} /><output>{Math.round(camera.focalLength)} mm</output></label>
+            <label className="range-field"><span>焦距</span><input type="range" min="18" max="120" value={camera.focalLength} onChange={e => onUpdateCamera({ focalLength: Number(e.target.value) })} /><SliderNumberInput ariaLabel="焦距数值" value={Math.round(camera.focalLength)} min={18} max={120} step={1} digits={0} unit=" mm" onChange={value => onUpdateCamera({ focalLength: value })} /></label>
             <div className="focal-presets" aria-label="常用焦距">
               {FOCAL_LENGTH_PRESETS.map(value => <button type="button" key={value} className={Math.round(camera.focalLength) === value ? 'is-active' : ''} onClick={() => onUpdateCamera({ focalLength: value })}>{value}</button>)}
             </div>
@@ -797,7 +828,7 @@ function Inspector({ selected, camera, selectedJoint, customPoses, onSelectJoint
             <div className="section-title"><span>人物</span><ChevronDown size={14} /></div>
             <label className="select-field"><span>体型</span><select value={selected.bodyType} onChange={e => onUpdateObject({ bodyType: e.target.value })}><option value="standard">中性人体</option><option value="female">女性人体</option><option value="male">男性人体</option><option value="tall">修长人体</option><option value="broad">宽体人体</option></select></label>
             <label className="select-field"><span>动作预设</span><select value={normalizePoseId(selected.pose)} onChange={e => applyPreset(e.target.value)}>{RIG_PRESET_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-            <label className="range-field pose-time-field"><span>动作相位</span><input type="range" min="0" max="1" step="0.01" value={Number.isFinite(selected.poseTime) ? selected.poseTime : presetPhase(selected.pose)} onChange={e => onUpdateObject({ poseTime: Number(e.target.value) })} /><output>{Math.round((Number.isFinite(selected.poseTime) ? selected.poseTime : presetPhase(selected.pose)) * 100)}%</output></label>
+            <label className="range-field pose-time-field"><span>动作相位</span><input type="range" min="0" max="1" step="0.01" value={phaseValue} onChange={e => onUpdateObject({ poseTime: Number(e.target.value) })} /><SliderNumberInput ariaLabel="动作相位数值" value={Math.round(phaseValue * 100)} min={0} max={100} step={1} digits={0} unit="%" onChange={value => onUpdateObject({ poseTime: value / 100 })} /></label>
             <label className={`motion-loop-control ${canLoopPose ? '' : 'is-disabled'}`}>
               <input type="checkbox" checked={canLoopPose && Boolean(selected.continuousMotion)} disabled={!canLoopPose} onChange={event => onUpdateObject({ continuousMotion: event.target.checked })} />
               <span><strong>随时间轴循环动作</strong><small>{canLoopPose ? '播放、拖帧和导出时持续循环' : '当前预设是固定姿势，不支持循环'}</small></span>
@@ -1859,6 +1890,17 @@ export default function App() {
     setObjects(list => list.map(object => object.id === id ? { ...object, ...patch } : object))
   }
   const updateSelected = patch => updateObjectById(selectedId, patch)
+  const syncObjectNameToShots = (id, name) => {
+    setShots(list => list.map(shot => Array.isArray(shot.objects) && shot.objects.some(item => item.id === id && item.name !== name)
+      ? { ...shot, objects: shot.objects.map(item => item.id === id ? { ...item, name } : item) }
+      : shot))
+  }
+  const renameObject = (id, name) => {
+    const trimmed = String(name || '').trim().slice(0, 30)
+    if (!trimmed) return
+    updateObjectById(id, { name: trimmed })
+    syncObjectNameToShots(id, trimmed)
+  }
   const groundSelected = () => {
     if (!activeObject || activeObject.locked) return
     setGroundRequest({ id: activeObject.id, nonce: Date.now() })
@@ -2287,7 +2329,7 @@ export default function App() {
       </header>
 
       <div className="workspace">
-        <LeftSidebar objects={objects} selectedId={selectedId} onSelect={setSelectedId} onAddPerson={addPerson} onAddPrimitive={addPrimitive} onImport={importModel} onToggleVisible={id => updateObjectById(id, { visible: objects.find(item => item.id === id)?.visible === false })} onToggleLock={id => updateObjectById(id, { locked: !objects.find(item => item.id === id)?.locked })} shots={displayedShots} activeShotId={activeShotId} onSelectShot={switchShot} onAddShot={addShot} onDuplicateShot={duplicateShot} onDeleteShot={deleteShot} onRenameShot={renameShot} onCaptureShot={captureShotThumbnail} />
+        <LeftSidebar objects={objects} selectedId={selectedId} onSelect={setSelectedId} onAddPerson={addPerson} onAddPrimitive={addPrimitive} onImport={importModel} onToggleVisible={id => updateObjectById(id, { visible: objects.find(item => item.id === id)?.visible === false })} onToggleLock={id => updateObjectById(id, { locked: !objects.find(item => item.id === id)?.locked })} onRenameObject={renameObject} shots={displayedShots} activeShotId={activeShotId} onSelectShot={switchShot} onAddShot={addShot} onDuplicateShot={duplicateShot} onDeleteShot={deleteShot} onRenameShot={renameShot} onCaptureShot={captureShotThumbnail} />
         <section className="viewport-shell">
           <div className="viewport-toolbar floating-panel">
             <ToolButton icon={MousePointer2} label="选择" active={!['translate', 'rotate', 'scale'].includes(transformMode)} onClick={() => setTransformMode('select')} shortcut="Q" />
@@ -2386,7 +2428,7 @@ export default function App() {
             />
           </aside>
         ) : (
-        <Inspector selected={inspectorSelected} camera={camera} selectedJoint={selectedJoint} customPoses={customPoses} onSelectJoint={setSelectedJoint} onUpdateObject={updateSelected} onUpdateCamera={patch => setCamera(current => ({ ...current, ...patch }))} onDelete={deleteSelected} onDuplicate={duplicateSelected} onFocus={focusSelected} onToggleLock={() => activeObject && updateSelected({ locked: !activeObject.locked })} onGround={groundSelected} onResetRotation={resetSelectedRotation} onResetScale={resetSelectedScale} onSaveCustomPose={saveCustomPose} onApplyCustomPose={applyCustomPose} onDeleteCustomPose={deleteCustomPose} />
+        <Inspector selected={inspectorSelected} camera={camera} selectedJoint={selectedJoint} customPoses={customPoses} onSelectJoint={setSelectedJoint} onUpdateObject={updateSelected} onUpdateCamera={patch => setCamera(current => ({ ...current, ...patch }))} onDelete={deleteSelected} onDuplicate={duplicateSelected} onFocus={focusSelected} onToggleLock={() => activeObject && updateSelected({ locked: !activeObject.locked })} onGround={groundSelected} onResetRotation={resetSelectedRotation} onResetScale={resetSelectedScale} onSaveCustomPose={saveCustomPose} onApplyCustomPose={applyCustomPose} onDeleteCustomPose={deleteCustomPose} onCommitName={renameObject} />
         )}
         <Timeline
           currentFrame={currentFrame}
